@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://c7yhx8m5x3pq1"]
+
+[ext_resource type="Script" path="res://scripts/knight.gd" id="1_7x9v2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1x8k9"]
+size = Vector2(64, 64)
+
+[node name="Knight" type="CharacterBody2D"]
+script = ExtResource("1_7x9v2")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.8, 0.8, 1, 1)
+scale = Vector2(64, 64)
+texture = preload("res://icon.svg")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_1x8k9")
+
+[node name="AttackArea" type="Area2D" parent="."]
+
+[node name="AttackShape" type="CollisionShape2D" parent="AttackArea"]
+position = Vector2(40, 0)
+shape = SubResource("RectangleShape2D_1x8k9")

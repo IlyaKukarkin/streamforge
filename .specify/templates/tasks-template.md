@@ -8,9 +8,20 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: The examples below include test tasks. Tests are OPTIONAL during rapid prototyping or experiments; if tests are deferred the spec MUST provide a testing backlog, risk assessment, and a remediation timeline for stabilization. For non-prototype work, include unit, integration and (where applicable) end-to-end tests in the feature tasks.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Constitution Compliance Check
+
+Before proceeding with tasks, verify alignment with constitutional principles:
+
+- [ ] **Development Environment**: All commands use PowerShell-compatible syntax; all JS/TS operations use Bun
+- [ ] **Standardized Scripts**: All development operations MUST use root-level standardized scripts (no directory navigation)
+- [ ] **Quality Gates**: Build processes include type checking, linting, and automated tests
+- [ ] **Project Initialization**: New components follow established patterns and architecture
+
+If any checks fail, address constitutional compliance before proceeding with feature tasks.
 
 ## Format: `[ID] [P?] [Story] Description`
 

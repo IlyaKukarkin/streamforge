@@ -1,0 +1,34 @@
+{
+  "name": "streamforge",
+  "version": "1.0.0",
+  "description": "Interactive 2D endless side-scroller with donation-driven events",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "backend:install": "cd backend && bun install",
+    "backend:dev": "cd backend && bun dev",
+    "backend:start": "cd backend && bun start",
+    "backend:build": "cd backend && bun run build",
+    "backend:lint": "cd backend && bun run lint",
+    "backend:lint:fix": "cd backend && bun run lint:fix",
+    "backend:test": "cd backend && bun test",
+    "backend:type-check": "cd backend && bun run type-check",
+    "game:open": "echo 'Open game/project.godot in Godot Editor manually'",
+    "game:export": "echo 'Export from Godot Editor: Project > Export'",
+    "dev": "bun run backend:dev",
+    "start": "bun run backend:start",
+    "build": "bun run backend:build",
+    "lint": "bun run backend:lint",
+    "lint:fix": "bun run backend:lint:fix",
+    "test": "bun run backend:test",
+    "type-check": "bun run backend:type-check",
+    "setup": "bun run backend:install && echo 'Backend setup complete. Open game/project.godot in Godot Editor to setup game.'",
+    "clean": "cd backend && powershell -Command \"Remove-Item -Recurse -Force node_modules,dist -ErrorAction SilentlyContinue\""
+  },
+  "workspaces": [
+    "backend"
+  ],
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}
