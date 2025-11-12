@@ -1,250 +1,274 @@
 // HTTP API server for admin controls and monitoring
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import type { Config } from './types/index.js';
-import { logger } from './services/logger.js';
-import { GameStateManager } from './game-state.js';
-import { DonationQueue } from './donation-queue.js';
-import { RateLimiter } from './middleware/rate-limiter.js';
+
+import cors from "cors";
+import express, {
+	type NextFunction,
+	type Request,
+	type Response,
+} from "express";
+import type { DonationQueue } from "./donation-queue.js";
+import type { GameStateManager } from "./game-state.js";
+import type { RateLimiter } from "./middleware/rate-limiter.js";
+import { logger } from "./services/logger.js";
+import type { Config } from "./types/index.js";
 
 export interface AdminApiDependencies {
-  gameStateManager: GameStateManager;
-  donationQueue: DonationQueue;
-  rateLimiter: RateLimiter;
+	gameStateManager: GameStateManager;
+	donationQueue: DonationQueue;
+	rateLimiter: RateLimiter;
 }
 
 export class AdminApiServer {
-  private app: express.Application;
-  private config: Config;
-  private dependencies: AdminApiDependencies;
-  private server: any;
+	private app: express.Application;
+	private config: Config;
+	private dependencies: AdminApiDependencies;
+	private server: any;
 
-  constructor(config: Config, dependencies: AdminApiDependencies) {
-    this.config = config;
-    this.dependencies = dependencies;
-    this.app = express();
-    this.setupMiddleware();
-    this.setupRoutes();
-  }
+	constructor(config: Config, dependencies: AdminApiDependencies) {
+		this.config = config;
+		this.dependencies = dependencies;
+		this.app = express();
+		this.setupMiddleware();
+		this.setupRoutes();
+	}
 
-  private setupMiddleware(): void {
-    // CORS
-    if (this.config.enableCors) {
-      this.app.use(cors());
-    }
+	private setupMiddleware(): void {
+		// CORS
+		if (this.config.enableCors) {
+			this.app.use(cors());
+		}
 
-    // JSON parsing
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true }));
+		// JSON parsing
+		this.app.use(express.json({ limit: "10mb" }));
+		this.app.use(express.urlencoded({ extended: true }));
 
-    // API key authentication middleware
-    this.app.use('/api', this.authenticateApiKey.bind(this));
+		// API key authentication middleware
+		this.app.use("/api", this.authenticateApiKey.bind(this));
 
-    // Request logging
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      logger.info(`${req.method} ${req.path}`, { ip: req.ip });
-      next();
-    });
-  }
+		// Request logging
+		this.app.use((req: Request, res: Response, next: NextFunction) => {
+			logger.info(`${req.method} ${req.path}`, { ip: req.ip });
+			next();
+		});
+	}
 
-  private authenticateApiKey(req: Request, res: Response, next: NextFunction): void {
-    const apiKey = req.headers['x-api-key'] || req.query['api_key'];
-    
-    if (apiKey !== this.config.adminApiKey) {
-      logger.warn('Unauthorized API access attempt', { 
-        ip: req.ip, 
-        path: req.path,
-        providedKey: typeof apiKey === 'string' ? apiKey.substring(0, 8) + '...' : 'none'
-      });
-      res.status(401).json({ error: 'Invalid API key' });
-      return;
-    }
+	private authenticateApiKey(
+		req: Request,
+		res: Response,
+		next: NextFunction,
+	): void {
+		const apiKey = req.headers["x-api-key"] || req.query["api_key"];
 
-    next();
-  }
+		if (apiKey !== this.config.adminApiKey) {
+			logger.warn("Unauthorized API access attempt", {
+				ip: req.ip,
+				path: req.path,
+				providedKey:
+					typeof apiKey === "string" ? apiKey.substring(0, 8) + "..." : "none",
+			});
+			res.status(401).json({ error: "Invalid API key" });
+			return;
+		}
 
-  private setupRoutes(): void {
-    // Health check (no auth required)
-    this.app.get('/health', this.handleHealthCheck.bind(this));
+		next();
+	}
 
-    // API routes (require authentication)
-    this.app.get('/api/status', this.handleGetStatus.bind(this));
-    this.app.get('/api/game-state', this.handleGetGameState.bind(this));
-    this.app.put('/api/game-state', this.handleUpdateGameState.bind(this));
-    this.app.post('/api/game-state/reset', this.handleResetGame.bind(this));
-    
-    this.app.get('/api/donations/queue', this.handleGetDonationQueue.bind(this));
-    this.app.post('/api/donations/test', this.handleTestDonation.bind(this));
-    this.app.delete('/api/donations/clear', this.handleClearDonationQueue.bind(this));
-    
-    this.app.get('/api/rate-limits', this.handleGetRateLimits.bind(this));
-    this.app.delete('/api/rate-limits/reset', this.handleResetRateLimits.bind(this));
+	private setupRoutes(): void {
+		// Health check (no auth required)
+		this.app.get("/health", this.handleHealthCheck.bind(this));
 
-    // Overlay endpoint (for OBS browser sources)
-    this.app.get('/overlay', this.handleGetOverlay.bind(this));
+		// API routes (require authentication)
+		this.app.get("/api/status", this.handleGetStatus.bind(this));
+		this.app.get("/api/game-state", this.handleGetGameState.bind(this));
+		this.app.put("/api/game-state", this.handleUpdateGameState.bind(this));
+		this.app.post("/api/game-state/reset", this.handleResetGame.bind(this));
 
-    // Error handling
-    this.app.use(this.handleError.bind(this));
-  }
+		this.app.get(
+			"/api/donations/queue",
+			this.handleGetDonationQueue.bind(this),
+		);
+		this.app.post("/api/donations/test", this.handleTestDonation.bind(this));
+		this.app.delete(
+			"/api/donations/clear",
+			this.handleClearDonationQueue.bind(this),
+		);
 
-  // Route handlers
-  private handleHealthCheck(req: Request, res: Response): void {
-    res.json({
-      status: 'healthy',
-      timestamp: Date.now(),
-      uptime: process.uptime(),
-    });
-  }
+		this.app.get("/api/rate-limits", this.handleGetRateLimits.bind(this));
+		this.app.delete(
+			"/api/rate-limits/reset",
+			this.handleResetRateLimits.bind(this),
+		);
 
-  private handleGetStatus(req: Request, res: Response): void {
-    try {
-      const gameState = this.dependencies.gameStateManager.getState();
-      const queueStats = this.dependencies.donationQueue.getQueueStats();
-      
-      res.json({
-        server: {
-          uptime: process.uptime(),
-          timestamp: Date.now(),
-        },
-        gameState,
-        donationQueue: queueStats,
-      });
-    } catch (error) {
-      logger.error('Error getting server status:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+		// Overlay endpoint (for OBS browser sources)
+		this.app.get("/overlay", this.handleGetOverlay.bind(this));
 
-  private handleGetGameState(req: Request, res: Response): void {
-    try {
-      const gameState = this.dependencies.gameStateManager.getState();
-      res.json(gameState);
-    } catch (error) {
-      logger.error('Error getting game state:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+		// Error handling
+		this.app.use(this.handleError.bind(this));
+	}
 
-  private handleUpdateGameState(req: Request, res: Response): void {
-    try {
-      const updates = req.body;
-      this.dependencies.gameStateManager.updateState(updates);
-      const newState = this.dependencies.gameStateManager.getState();
-      
-      logger.info('Game state updated via API', { updates });
-      res.json(newState);
-    } catch (error) {
-      logger.error('Error updating game state:', error as Error);
-      res.status(400).json({ error: 'Invalid game state update' });
-    }
-  }
+	// Route handlers
+	private handleHealthCheck(req: Request, res: Response): void {
+		res.json({
+			status: "healthy",
+			timestamp: Date.now(),
+			uptime: process.uptime(),
+		});
+	}
 
-  private handleResetGame(req: Request, res: Response): void {
-    try {
-      this.dependencies.gameStateManager.resetGame();
-      this.dependencies.donationQueue.clearQueue();
-      
-      const gameState = this.dependencies.gameStateManager.getState();
-      
-      logger.info('Game reset via API');
-      res.json({
-        success: true,
-        gameState,
-      });
-    } catch (error) {
-      logger.error('Error resetting game:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+	private handleGetStatus(req: Request, res: Response): void {
+		try {
+			const gameState = this.dependencies.gameStateManager.getState();
+			const queueStats = this.dependencies.donationQueue.getQueueStats();
 
-  private handleGetDonationQueue(req: Request, res: Response): void {
-    try {
-      const queueData = this.dependencies.donationQueue.getQueueData();
-      res.json(queueData);
-    } catch (error) {
-      logger.error('Error getting donation queue:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+			res.json({
+				server: {
+					uptime: process.uptime(),
+					timestamp: Date.now(),
+				},
+				gameState,
+				donationQueue: queueStats,
+			});
+		} catch (error) {
+			logger.error("Error getting server status:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
 
-  private handleTestDonation(req: Request, res: Response): void {
-    try {
-      const { username = 'TestUser', amount = 5.0, eventType = 'speed_boost', message = 'Test donation' } = req.body;
-      
-      // Create test donation
-      const testDonation = {
-        donationId: `test_${Date.now()}`,
-        username,
-        amount: Number(amount),
-        eventType,
-        message,
-        timestamp: Date.now(),
-        processed: false,
-        parameters: {},
-      };
+	private handleGetGameState(req: Request, res: Response): void {
+		try {
+			const gameState = this.dependencies.gameStateManager.getState();
+			res.json(gameState);
+		} catch (error) {
+			logger.error("Error getting game state:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
 
-      // Add to queue
-      this.dependencies.donationQueue.enqueueDonation(testDonation);
-      
-      logger.info('Test donation created:', testDonation);
-      res.json({
-        success: true,
-        donation: testDonation,
-      });
-    } catch (error) {
-      logger.error('Error creating test donation:', error as Error);
-      res.status(400).json({ error: 'Invalid test donation data' });
-    }
-  }
+	private handleUpdateGameState(req: Request, res: Response): void {
+		try {
+			const updates = req.body;
+			this.dependencies.gameStateManager.updateState(updates);
+			const newState = this.dependencies.gameStateManager.getState();
 
-  private handleClearDonationQueue(req: Request, res: Response): void {
-    try {
-      this.dependencies.donationQueue.clearQueue();
-      
-      logger.info('Donation queue cleared via API');
-      res.json({ success: true });
-    } catch (error) {
-      logger.error('Error clearing donation queue:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+			logger.info("Game state updated via API", { updates });
+			res.json(newState);
+		} catch (error) {
+			logger.error("Error updating game state:", error as Error);
+			res.status(400).json({ error: "Invalid game state update" });
+		}
+	}
 
-  private handleGetRateLimits(req: Request, res: Response): void {
-    try {
-      const rateLimitStats = this.dependencies.rateLimiter.getStats();
-      res.json(rateLimitStats);
-    } catch (error) {
-      logger.error('Error getting rate limit stats:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+	private handleResetGame(req: Request, res: Response): void {
+		try {
+			this.dependencies.gameStateManager.resetGame();
+			this.dependencies.donationQueue.clearQueue();
 
-  private handleResetRateLimits(req: Request, res: Response): void {
-    try {
-      this.dependencies.rateLimiter.resetAllLimits();
-      
-      logger.info('Rate limits reset via API');
-      res.json({ success: true });
-    } catch (error) {
-      logger.error('Error resetting rate limits:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+			const gameState = this.dependencies.gameStateManager.getState();
 
-  private handleGetOverlay(req: Request, res: Response): void {
-    try {
-      // Serve HTML overlay for OBS
-      const overlayHtml = this.generateOverlayHtml();
-      res.setHeader('Content-Type', 'text/html');
-      res.send(overlayHtml);
-    } catch (error) {
-      logger.error('Error serving overlay:', error as Error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+			logger.info("Game reset via API");
+			res.json({
+				success: true,
+				gameState,
+			});
+		} catch (error) {
+			logger.error("Error resetting game:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
 
-  private generateOverlayHtml(): string {
-    return `<!DOCTYPE html>
+	private handleGetDonationQueue(req: Request, res: Response): void {
+		try {
+			const queueData = this.dependencies.donationQueue.getQueueData();
+			res.json(queueData);
+		} catch (error) {
+			logger.error("Error getting donation queue:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+
+	private handleTestDonation(req: Request, res: Response): void {
+		try {
+			const {
+				username = "TestUser",
+				amount = 5.0,
+				eventType = "speed_boost",
+				message = "Test donation",
+			} = req.body;
+
+			// Create test donation
+			const testDonation = {
+				donationId: `test_${Date.now()}`,
+				username,
+				amount: Number(amount),
+				eventType,
+				message,
+				timestamp: Date.now(),
+				processed: false,
+				parameters: {},
+			};
+
+			// Add to queue
+			this.dependencies.donationQueue.enqueueDonation(testDonation);
+
+			logger.info("Test donation created:", testDonation);
+			res.json({
+				success: true,
+				donation: testDonation,
+			});
+		} catch (error) {
+			logger.error("Error creating test donation:", error as Error);
+			res.status(400).json({ error: "Invalid test donation data" });
+		}
+	}
+
+	private handleClearDonationQueue(req: Request, res: Response): void {
+		try {
+			this.dependencies.donationQueue.clearQueue();
+
+			logger.info("Donation queue cleared via API");
+			res.json({ success: true });
+		} catch (error) {
+			logger.error("Error clearing donation queue:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+
+	private handleGetRateLimits(req: Request, res: Response): void {
+		try {
+			const rateLimitStats = this.dependencies.rateLimiter.getStats();
+			res.json(rateLimitStats);
+		} catch (error) {
+			logger.error("Error getting rate limit stats:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+
+	private handleResetRateLimits(req: Request, res: Response): void {
+		try {
+			this.dependencies.rateLimiter.resetAllLimits();
+
+			logger.info("Rate limits reset via API");
+			res.json({ success: true });
+		} catch (error) {
+			logger.error("Error resetting rate limits:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+
+	private handleGetOverlay(req: Request, res: Response): void {
+		try {
+			// Serve HTML overlay for OBS
+			const overlayHtml = this.generateOverlayHtml();
+			res.setHeader("Content-Type", "text/html");
+			res.send(overlayHtml);
+		} catch (error) {
+			logger.error("Error serving overlay:", error as Error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	}
+
+	private generateOverlayHtml(): string {
+		return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -393,51 +417,56 @@ export class AdminApiServer {
     </script>
 </body>
 </html>`;
-  }
+	}
 
-  private handleError(error: Error, req: Request, res: Response, next: NextFunction): void {
-    logger.error('API error:', error);
-    
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: 'Internal server error',
-        message: error.message,
-      });
-    }
-  }
+	private handleError(
+		error: Error,
+		req: Request,
+		res: Response,
+		next: NextFunction,
+	): void {
+		logger.error("API error:", error);
 
-  public async start(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.server = this.app.listen(this.config.port, () => {
-          logger.info(`Admin API server started on port ${this.config.port}`);
-          resolve();
-        });
+		if (!res.headersSent) {
+			res.status(500).json({
+				error: "Internal server error",
+				message: error.message,
+			});
+		}
+	}
 
-        this.server.on('error', (error: Error) => {
-          logger.error('Admin API server error:', error);
-          reject(error);
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
+	public async start(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			try {
+				this.server = this.app.listen(this.config.port, () => {
+					logger.info(`Admin API server started on port ${this.config.port}`);
+					resolve();
+				});
 
-  public async stop(): Promise<void> {
-    return new Promise((resolve) => {
-      if (this.server) {
-        this.server.close(() => {
-          logger.info('Admin API server stopped');
-          resolve();
-        });
-      } else {
-        resolve();
-      }
-    });
-  }
+				this.server.on("error", (error: Error) => {
+					logger.error("Admin API server error:", error);
+					reject(error);
+				});
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
 
-  public getApp(): express.Application {
-    return this.app;
-  }
+	public async stop(): Promise<void> {
+		return new Promise((resolve) => {
+			if (this.server) {
+				this.server.close(() => {
+					logger.info("Admin API server stopped");
+					resolve();
+				});
+			} else {
+				resolve();
+			}
+		});
+	}
+
+	public getApp(): express.Application {
+		return this.app;
+	}
 }

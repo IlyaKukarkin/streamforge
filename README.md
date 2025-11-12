@@ -2,6 +2,8 @@
 
 An interactive 2D endless side-scroller where viewers can donate to influence gameplay through real-time events. Built with Godot 4 (GDScript) for the game and Bun + TypeScript for the backend service.
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/IlyaKukarkin/streamforge?utm_source=oss&utm_medium=github&utm_campaign=IlyaKukarkin%2Fstreamforge&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 ## 🎮 Features
 
 - **Endless 2D Gameplay**: Knight character walks right, fighting enemies and accumulating score

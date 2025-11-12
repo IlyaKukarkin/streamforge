@@ -1,386 +1,428 @@
 // WebSocket server for real-time communication with Godot game
-import WebSocket, { WebSocketServer } from 'ws';
-import type { Config, WebSocketMessage, GameStateUpdate, StatsUpdate, DonationNotification, ConnectionState } from './types/index.js';
-import { logger } from './services/logger.js';
-import { GameStateManager } from './game-state.js';
-import { DonationQueue } from './donation-queue.js';
+import WebSocket, { WebSocketServer } from "ws";
+import type { DonationQueue } from "./donation-queue.js";
+import type { GameStateManager } from "./game-state.js";
+import { logger } from "./services/logger.js";
+import type {
+	Config,
+	ConnectionState,
+	GameStateUpdate,
+	StatsUpdate,
+	WebSocketMessage,
+} from "./types/index.js";
 
 export class GameWebSocketServer {
-  private server: WebSocketServer;
-  private config: Config;
-  private gameStateManager: GameStateManager;
-  private donationQueue: DonationQueue;
-  private connectedClients: Map<string, ConnectionState> = new Map();
-  private messageHandlers: Map<string, Function> = new Map();
+	private server: WebSocketServer;
+	private config: Config;
+	private gameStateManager: GameStateManager;
+	private donationQueue: DonationQueue;
+	private connectedClients: Map<string, ConnectionState> = new Map();
+	private messageHandlers: Map<string, Function> = new Map();
 
-  constructor(config: Config, gameStateManager: GameStateManager, donationQueue: DonationQueue) {
-    this.config = config;
-    this.gameStateManager = gameStateManager;
-    this.donationQueue = donationQueue;
-    
-    // Initialize WebSocket server
-    this.server = new WebSocketServer({
-      port: config.websocket.port,
-      perMessageDeflate: false,
-    });
+	constructor(
+		config: Config,
+		gameStateManager: GameStateManager,
+		donationQueue: DonationQueue,
+	) {
+		this.config = config;
+		this.gameStateManager = gameStateManager;
+		this.donationQueue = donationQueue;
 
-    this.setupMessageHandlers();
-    this.setupEventListeners();
-    
-    logger.info(`WebSocket server initialized on port ${config.websocket.port}`);
-  }
+		// Initialize WebSocket server
+		this.server = new WebSocketServer({
+			port: config.websocket.port,
+			perMessageDeflate: false,
+		});
 
-  private setupMessageHandlers(): void {
-    this.messageHandlers.set('game_state_update', this.handleGameStateUpdate.bind(this));
-    this.messageHandlers.set('stats_update', this.handleStatsUpdate.bind(this));
-    this.messageHandlers.set('ping', this.handlePing.bind(this));
-    this.messageHandlers.set('client_info', this.handleClientInfo.bind(this));
-  }
+		this.setupMessageHandlers();
+		this.setupEventListeners();
 
-  private setupEventListeners(): void {
-    this.server.on('connection', this.handleConnection.bind(this));
-    this.server.on('error', this.handleServerError.bind(this));
-    
-    // Listen for donation events from the queue
-    this.donationQueue.onDonationProcessed((donation) => {
-      this.broadcastDonation(donation);
-    });
+		logger.info(
+			`WebSocket server initialized on port ${config.websocket.port}`,
+		);
+	}
 
-    // Listen for game state changes
-    this.gameStateManager.onStateChange((gameState) => {
-      this.broadcastGameState(gameState);
-    });
-  }
+	private setupMessageHandlers(): void {
+		this.messageHandlers.set(
+			"game_state_update",
+			this.handleGameStateUpdate.bind(this),
+		);
+		this.messageHandlers.set("stats_update", this.handleStatsUpdate.bind(this));
+		this.messageHandlers.set("ping", this.handlePing.bind(this));
+		this.messageHandlers.set("client_info", this.handleClientInfo.bind(this));
+	}
 
-  private handleConnection(ws: WebSocket, request: any): void {
-    const clientId = this.generateClientId();
-    const clientIP = request.socket.remoteAddress || 'unknown';
-    
-    logger.info(`New WebSocket connection: ${clientId} from ${clientIP}`);
+	private setupEventListeners(): void {
+		this.server.on("connection", this.handleConnection.bind(this));
+		this.server.on("error", this.handleServerError.bind(this));
 
-    // Initialize client state
-    const connectionState: ConnectionState = {
-      id: clientId,
-      ip: clientIP,
-      connectedAt: Date.now(),
-      lastPing: Date.now(),
-      isAlive: true,
-      clientType: 'unknown', // Will be updated when client sends info
-    };
+		// Listen for donation events from the queue
+		this.donationQueue.onDonationProcessed((donation) => {
+			this.broadcastDonation(donation);
+		});
 
-    this.connectedClients.set(clientId, connectionState);
+		// Listen for game state changes
+		this.gameStateManager.onStateChange((gameState) => {
+			this.broadcastGameState(gameState);
+		});
+	}
 
-    // Setup client-specific handlers
-    ws.on('message', (data: Buffer) => {
-      this.handleMessage(clientId, ws, data);
-    });
+	private handleConnection(ws: WebSocket, request: any): void {
+		const clientId = this.generateClientId();
+		const clientIP = request.socket.remoteAddress || "unknown";
 
-    ws.on('close', (code: number, reason: Buffer) => {
-      this.handleDisconnection(clientId, code, reason.toString());
-    });
+		logger.info(`New WebSocket connection: ${clientId} from ${clientIP}`);
 
-    ws.on('error', (error: Error) => {
-      this.handleClientError(clientId, error);
-    });
+		// Initialize client state
+		const connectionState: ConnectionState = {
+			id: clientId,
+			ip: clientIP,
+			connectedAt: Date.now(),
+			lastPing: Date.now(),
+			isAlive: true,
+			clientType: "unknown", // Will be updated when client sends info
+		};
 
-    ws.on('pong', () => {
-      this.handlePong(clientId);
-    });
+		this.connectedClients.set(clientId, connectionState);
 
-    // Send initial game state to new client
-    this.sendGameStateUpdate(ws);
-    
-    // Send welcome message
-    this.sendMessage(ws, {
-      type: 'connection_established',
-      data: {
-        clientId,
-        gameState: this.gameStateManager.getCurrentState(),
-        serverTime: Date.now(),
-      },
-    });
-  }
+		// Setup client-specific handlers
+		ws.on("message", (data: Buffer) => {
+			this.handleMessage(clientId, ws, data);
+		});
 
-  private handleMessage(clientId: string, ws: WebSocket, data: Buffer): void {
-    try {
-      const message: WebSocketMessage = JSON.parse(data.toString());
-      
-      // Update last activity
-      const client = this.connectedClients.get(clientId);
-      if (client) {
-        client.lastPing = Date.now();
-      }
+		ws.on("close", (code: number, reason: Buffer) => {
+			this.handleDisconnection(clientId, code, reason.toString());
+		});
 
-      logger.debug(`Message received from ${clientId}:`, { type: message.type });
+		ws.on("error", (error: Error) => {
+			this.handleClientError(clientId, error);
+		});
 
-      // Route message to appropriate handler
-      const handler = this.messageHandlers.get(message.type);
-      if (handler) {
-        handler(clientId, ws, message);
-      } else {
-        logger.warn(`Unknown message type from ${clientId}: ${message.type}`);
-        this.sendError(ws, `Unknown message type: ${message.type}`);
-      }
-    } catch (error) {
-      logger.error(`Error parsing message from ${clientId}:`, error);
-      this.sendError(ws, 'Invalid message format');
-    }
-  }
+		ws.on("pong", () => {
+			this.handlePong(clientId);
+		});
 
-  private handleGameStateUpdate(clientId: string, ws: WebSocket, message: WebSocketMessage): void {
-    try {
-      const update = message.data as GameStateUpdate;
-      this.gameStateManager.updateGameState(update);
-      
-      logger.debug(`Game state updated by ${clientId}:`, update);
-    } catch (error) {
-      logger.error(`Error handling game state update from ${clientId}:`, error);
-      this.sendError(ws, 'Failed to update game state');
-    }
-  }
+		// Send initial game state to new client
+		this.sendGameStateUpdate(ws);
 
-  private handleStatsUpdate(clientId: string, ws: WebSocket, message: WebSocketMessage): void {
-    try {
-      const stats = message.data as StatsUpdate;
-      this.gameStateManager.updateStats(stats);
-      
-      logger.debug(`Stats updated by ${clientId}:`, stats);
-    } catch (error) {
-      logger.error(`Error handling stats update from ${clientId}:`, error);
-      this.sendError(ws, 'Failed to update stats');
-    }
-  }
+		// Send welcome message
+		this.sendMessage(ws, {
+			type: "connection_established",
+			data: {
+				clientId,
+				gameState: this.gameStateManager.getCurrentState(),
+				serverTime: Date.now(),
+			},
+		});
+	}
 
-  private handlePing(clientId: string, ws: WebSocket, message: WebSocketMessage): void {
-    this.sendMessage(ws, {
-      type: 'pong',
-      data: {
-        timestamp: Date.now(),
-        clientId,
-      },
-    });
-  }
+	private handleMessage(clientId: string, ws: WebSocket, data: Buffer): void {
+		try {
+			const message: WebSocketMessage = JSON.parse(data.toString());
 
-  private handleClientInfo(clientId: string, ws: WebSocket, message: WebSocketMessage): void {
-    const clientInfo = message.data as { type: string, version?: string };
-    const client = this.connectedClients.get(clientId);
-    
-    if (client) {
-      client.clientType = clientInfo.type;
-      logger.info(`Client ${clientId} identified as: ${clientInfo.type}`);
-    }
-  }
+			// Update last activity
+			const client = this.connectedClients.get(clientId);
+			if (client) {
+				client.lastPing = Date.now();
+			}
 
-  private handlePong(clientId: string): void {
-    const client = this.connectedClients.get(clientId);
-    if (client) {
-      client.isAlive = true;
-      client.lastPing = Date.now();
-    }
-  }
+			logger.debug(`Message received from ${clientId}:`, {
+				type: message.type,
+			});
 
-  private handleDisconnection(clientId: string, code: number, reason: string): void {
-    logger.info(`Client ${clientId} disconnected: ${code} - ${reason}`);
-    this.connectedClients.delete(clientId);
-  }
+			// Route message to appropriate handler
+			const handler = this.messageHandlers.get(message.type);
+			if (handler) {
+				handler(clientId, ws, message);
+			} else {
+				logger.warn(`Unknown message type from ${clientId}: ${message.type}`);
+				this.sendError(ws, `Unknown message type: ${message.type}`);
+			}
+		} catch (error) {
+			logger.error(`Error parsing message from ${clientId}:`, error);
+			this.sendError(ws, "Invalid message format");
+		}
+	}
 
-  private handleClientError(clientId: string, error: Error): void {
-    logger.error(`WebSocket error for client ${clientId}:`, error);
-    this.connectedClients.delete(clientId);
-  }
+	private handleGameStateUpdate(
+		clientId: string,
+		ws: WebSocket,
+		message: WebSocketMessage,
+	): void {
+		try {
+			const update = message.data as GameStateUpdate;
+			this.gameStateManager.updateGameState(update);
 
-  private handleServerError(error: Error): void {
-    logger.error('WebSocket server error:', error);
-  }
+			logger.debug(`Game state updated by ${clientId}:`, update);
+		} catch (error) {
+			logger.error(`Error handling game state update from ${clientId}:`, error);
+			this.sendError(ws, "Failed to update game state");
+		}
+	}
 
-  // Broadcasting methods
-  public broadcastDonation(donation: any): void {
-    const message: WebSocketMessage = {
-      type: 'donation_event',
-      data: donation,
-    };
+	private handleStatsUpdate(
+		clientId: string,
+		ws: WebSocket,
+		message: WebSocketMessage,
+	): void {
+		try {
+			const stats = message.data as StatsUpdate;
+			this.gameStateManager.updateStats(stats);
 
-    this.broadcast(message);
-    logger.info(`Broadcasted donation event:`, { 
-      eventType: donation.eventType, 
-      amount: donation.amount,
-      username: donation.username 
-    });
-  }
+			logger.debug(`Stats updated by ${clientId}:`, stats);
+		} catch (error) {
+			logger.error(`Error handling stats update from ${clientId}:`, error);
+			this.sendError(ws, "Failed to update stats");
+		}
+	}
 
-  public broadcastGameState(gameState: any): void {
-    const message: WebSocketMessage = {
-      type: 'game_state_broadcast',
-      data: gameState,
-    };
+	private handlePing(
+		clientId: string,
+		ws: WebSocket,
+		message: WebSocketMessage,
+	): void {
+		this.sendMessage(ws, {
+			type: "pong",
+			data: {
+				timestamp: Date.now(),
+				clientId,
+			},
+		});
+	}
 
-    this.broadcast(message, { excludeType: 'game' }); // Don't send back to game clients
-    logger.debug('Broadcasted game state update');
-  }
+	private handleClientInfo(
+		clientId: string,
+		ws: WebSocket,
+		message: WebSocketMessage,
+	): void {
+		const clientInfo = message.data as { type: string; version?: string };
+		const client = this.connectedClients.get(clientId);
 
-  private broadcast(message: WebSocketMessage, options: { excludeType?: string } = {}): void {
-    const messageStr = JSON.stringify(message);
-    const deadClients: string[] = [];
+		if (client) {
+			client.clientType = clientInfo.type;
+			logger.info(`Client ${clientId} identified as: ${clientInfo.type}`);
+		}
+	}
 
-    this.server.clients.forEach((ws, index) => {
-      const clientId = this.findClientIdBySocket(ws);
-      const client = clientId ? this.connectedClients.get(clientId) : null;
+	private handlePong(clientId: string): void {
+		const client = this.connectedClients.get(clientId);
+		if (client) {
+			client.isAlive = true;
+			client.lastPing = Date.now();
+		}
+	}
 
-      // Skip if client type should be excluded
-      if (options.excludeType && client?.clientType === options.excludeType) {
-        return;
-      }
+	private handleDisconnection(
+		clientId: string,
+		code: number,
+		reason: string,
+	): void {
+		logger.info(`Client ${clientId} disconnected: ${code} - ${reason}`);
+		this.connectedClients.delete(clientId);
+	}
 
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(messageStr);
-        } catch (error) {
-          logger.error(`Error sending message to client ${clientId}:`, error);
-          if (clientId) deadClients.push(clientId);
-        }
-      } else {
-        if (clientId) deadClients.push(clientId);
-      }
-    });
+	private handleClientError(clientId: string, error: Error): void {
+		logger.error(`WebSocket error for client ${clientId}:`, error);
+		this.connectedClients.delete(clientId);
+	}
 
-    // Clean up dead connections
-    deadClients.forEach(clientId => {
-      this.connectedClients.delete(clientId);
-      logger.debug(`Removed dead client: ${clientId}`);
-    });
-  }
+	private handleServerError(error: Error): void {
+		logger.error("WebSocket server error:", error);
+	}
 
-  private sendMessage(ws: WebSocket, message: WebSocketMessage): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify(message));
-      } catch (error) {
-        logger.error('Error sending message to client:', error);
-      }
-    }
-  }
+	// Broadcasting methods
+	public broadcastDonation(donation: any): void {
+		const message: WebSocketMessage = {
+			type: "donation_event",
+			data: donation,
+		};
 
-  private sendError(ws: WebSocket, errorMessage: string): void {
-    this.sendMessage(ws, {
-      type: 'error',
-      data: {
-        message: errorMessage,
-        timestamp: Date.now(),
-      },
-    });
-  }
+		this.broadcast(message);
+		logger.info(`Broadcasted donation event:`, {
+			eventType: donation.eventType,
+			amount: donation.amount,
+			username: donation.username,
+		});
+	}
 
-  private sendGameStateUpdate(ws: WebSocket): void {
-    const gameState = this.gameStateManager.getCurrentState();
-    this.sendMessage(ws, {
-      type: 'game_state_update',
-      data: gameState,
-    });
-  }
+	public broadcastGameState(gameState: any): void {
+		const message: WebSocketMessage = {
+			type: "game_state_broadcast",
+			data: gameState,
+		};
 
-  private findClientIdBySocket(socket: WebSocket): string | null {
-    for (const [clientId, client] of this.connectedClients.entries()) {
-      // This is a simplified approach - in production, you'd want a more robust way
-      // to associate sockets with client IDs
-      return clientId;
-    }
-    return null;
-  }
+		this.broadcast(message, { excludeType: "game" }); // Don't send back to game clients
+		logger.debug("Broadcasted game state update");
+	}
 
-  private generateClientId(): string {
-    return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+	private broadcast(
+		message: WebSocketMessage,
+		options: { excludeType?: string } = {},
+	): void {
+		const messageStr = JSON.stringify(message);
+		const deadClients: string[] = [];
 
-  // Health check and maintenance
-  public startHealthCheck(): void {
-    const interval = setInterval(() => {
-      this.performHealthCheck();
-    }, this.config.websocket.pingInterval || 30000);
+		this.server.clients.forEach((ws, index) => {
+			const clientId = this.findClientIdBySocket(ws);
+			const client = clientId ? this.connectedClients.get(clientId) : null;
 
-    // Store interval reference for cleanup
-    (this as any).healthCheckInterval = interval;
-  }
+			// Skip if client type should be excluded
+			if (options.excludeType && client?.clientType === options.excludeType) {
+				return;
+			}
 
-  private performHealthCheck(): void {
-    const now = Date.now();
-    const timeout = this.config.websocket.connectionTimeout || 60000;
-    const deadClients: string[] = [];
+			if (ws.readyState === WebSocket.OPEN) {
+				try {
+					ws.send(messageStr);
+				} catch (error) {
+					logger.error(`Error sending message to client ${clientId}:`, error);
+					if (clientId) deadClients.push(clientId);
+				}
+			} else {
+				if (clientId) deadClients.push(clientId);
+			}
+		});
 
-    // Check for dead connections
-    this.connectedClients.forEach((client, clientId) => {
-      if (now - client.lastPing > timeout) {
-        logger.warn(`Client ${clientId} timed out`);
-        deadClients.push(clientId);
-      }
-    });
+		// Clean up dead connections
+		deadClients.forEach((clientId) => {
+			this.connectedClients.delete(clientId);
+			logger.debug(`Removed dead client: ${clientId}`);
+		});
+	}
 
-    // Remove dead clients
-    deadClients.forEach(clientId => {
-      this.connectedClients.delete(clientId);
-    });
+	private sendMessage(ws: WebSocket, message: WebSocketMessage): void {
+		if (ws.readyState === WebSocket.OPEN) {
+			try {
+				ws.send(JSON.stringify(message));
+			} catch (error) {
+				logger.error("Error sending message to client:", error);
+			}
+		}
+	}
 
-    // Send ping to all clients
-    this.server.clients.forEach((ws) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.ping();
-        } catch (error) {
-          logger.error('Error sending ping:', error);
-        }
-      }
-    });
+	private sendError(ws: WebSocket, errorMessage: string): void {
+		this.sendMessage(ws, {
+			type: "error",
+			data: {
+				message: errorMessage,
+				timestamp: Date.now(),
+			},
+		});
+	}
 
-    logger.debug(`Health check completed. Active connections: ${this.connectedClients.size}`);
-  }
+	private sendGameStateUpdate(ws: WebSocket): void {
+		const gameState = this.gameStateManager.getCurrentState();
+		this.sendMessage(ws, {
+			type: "game_state_update",
+			data: gameState,
+		});
+	}
 
-  // Public API
-  public getConnectedClients(): ConnectionState[] {
-    return Array.from(this.connectedClients.values());
-  }
+	private findClientIdBySocket(socket: WebSocket): string | null {
+		for (const [clientId, client] of this.connectedClients.entries()) {
+			// This is a simplified approach - in production, you'd want a more robust way
+			// to associate sockets with client IDs
+			return clientId;
+		}
+		return null;
+	}
 
-  public getConnectionCount(): number {
-    return this.connectedClients.size;
-  }
+	private generateClientId(): string {
+		return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	}
 
-  public forceDisconnectClient(clientId: string): boolean {
-    const client = this.connectedClients.get(clientId);
-    if (!client) {
-      return false;
-    }
+	// Health check and maintenance
+	public startHealthCheck(): void {
+		const interval = setInterval(() => {
+			this.performHealthCheck();
+		}, this.config.websocket.pingInterval || 30000);
 
-    // Find and close the socket
-    this.server.clients.forEach((ws) => {
-      const socketClientId = this.findClientIdBySocket(ws);
-      if (socketClientId === clientId) {
-        ws.close(1000, 'Forced disconnect by admin');
-        return;
-      }
-    });
+		// Store interval reference for cleanup
+		(this as any).healthCheckInterval = interval;
+	}
 
-    this.connectedClients.delete(clientId);
-    logger.info(`Force disconnected client: ${clientId}`);
-    return true;
-  }
+	private performHealthCheck(): void {
+		const now = Date.now();
+		const timeout = this.config.websocket.connectionTimeout || 60000;
+		const deadClients: string[] = [];
 
-  public async shutdown(): Promise<void> {
-    logger.info('Shutting down WebSocket server...');
+		// Check for dead connections
+		this.connectedClients.forEach((client, clientId) => {
+			if (now - client.lastPing > timeout) {
+				logger.warn(`Client ${clientId} timed out`);
+				deadClients.push(clientId);
+			}
+		});
 
-    // Clear health check interval
-    if ((this as any).healthCheckInterval) {
-      clearInterval((this as any).healthCheckInterval);
-    }
+		// Remove dead clients
+		deadClients.forEach((clientId) => {
+			this.connectedClients.delete(clientId);
+		});
 
-    // Close all client connections
-    this.server.clients.forEach((ws) => {
-      ws.close(1001, 'Server shutting down');
-    });
+		// Send ping to all clients
+		this.server.clients.forEach((ws) => {
+			if (ws.readyState === WebSocket.OPEN) {
+				try {
+					ws.ping();
+				} catch (error) {
+					logger.error("Error sending ping:", error);
+				}
+			}
+		});
 
-    // Close server
-    return new Promise((resolve) => {
-      this.server.close(() => {
-        logger.info('WebSocket server shut down completed');
-        resolve();
-      });
-    });
-  }
+		logger.debug(
+			`Health check completed. Active connections: ${this.connectedClients.size}`,
+		);
+	}
+
+	// Public API
+	public getConnectedClients(): ConnectionState[] {
+		return Array.from(this.connectedClients.values());
+	}
+
+	public getConnectionCount(): number {
+		return this.connectedClients.size;
+	}
+
+	public forceDisconnectClient(clientId: string): boolean {
+		const client = this.connectedClients.get(clientId);
+		if (!client) {
+			return false;
+		}
+
+		// Find and close the socket
+		this.server.clients.forEach((ws) => {
+			const socketClientId = this.findClientIdBySocket(ws);
+			if (socketClientId === clientId) {
+				ws.close(1000, "Forced disconnect by admin");
+				return;
+			}
+		});
+
+		this.connectedClients.delete(clientId);
+		logger.info(`Force disconnected client: ${clientId}`);
+		return true;
+	}
+
+	public async shutdown(): Promise<void> {
+		logger.info("Shutting down WebSocket server...");
+
+		// Clear health check interval
+		if ((this as any).healthCheckInterval) {
+			clearInterval((this as any).healthCheckInterval);
+		}
+
+		// Close all client connections
+		this.server.clients.forEach((ws) => {
+			ws.close(1001, "Server shutting down");
+		});
+
+		// Close server
+		return new Promise((resolve) => {
+			this.server.close(() => {
+				logger.info("WebSocket server shut down completed");
+				resolve();
+			});
+		});
+	}
 }
