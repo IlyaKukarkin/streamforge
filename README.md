@@ -15,7 +15,7 @@ An interactive 2D endless side-scroller where viewers can donate to influence ga
 
 ## 🏗️ Architecture
 
-```
+```text
 streamforge/
 ├── game/                  # Godot 4 project (pure GDScript)
 │   ├── scenes/           # Game scenes and UI

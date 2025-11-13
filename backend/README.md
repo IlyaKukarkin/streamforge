@@ -226,7 +226,7 @@ The project uses strict TypeScript with:
 
 ## 📁 Project Structure
 
-```
+```text
 backend/
 ├── src/
 │   ├── index.ts           # Main entry point
@@ -273,15 +273,15 @@ sudo systemctl start streamforge-backend
 
 ### Common Issues
 
-**WebSocket connection fails**
+#### WebSocket connection fails
 - Check firewall settings for port 3001
 - Verify WebSocket server is running: `netstat -an | grep 3001`
 
-**High memory usage**
+#### High memory usage
 - Check donation queue length: `GET /admin/stats`
 - Restart service if queue is stuck: `POST /admin/reset`
 
-**Slow event processing**
+#### Slow event processing
 - Check event latency in stats
 - Reduce donation rate limits in .env
 - Monitor logs for error patterns

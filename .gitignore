@@ -90,17 +90,12 @@ Thumbs.db
 
 # Logs
 logs
-*.log
 
 # Runtime
 *.exe
 *.out
 *.app
 *.dSYM/
-
-# Docker
-.dockerignore
-Dockerfile*
 
 # Secrets and config
 .env

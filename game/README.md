@@ -48,7 +48,7 @@ The game uses pure GDScript with:
 
 ## 📁 Project Structure
 
-```
+```text
 game/
 ├── project.godot          # Godot project configuration
 ├── scenes/               # Game scenes
