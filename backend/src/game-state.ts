@@ -2,6 +2,7 @@
 import type { DonationEvent, GameState, GameStatus } from "./types/index.js";
 
 export class GameStateManager {
+	private static readonly BASE_KNIGHT_ATTACK = 20;
 	private gameState: GameState;
 	private listeners: Set<(state: GameState) => void> = new Set();
 
@@ -154,7 +155,7 @@ export class GameStateManager {
 	 * Apply boost effect
 	 */
 	applyBoost(durationSeconds: number, boostPercent: number = 50): GameState {
-		const baseAttack = 20; // Knight base attack from clarifications
+		const baseAttack = GameStateManager.BASE_KNIGHT_ATTACK; // Knight base attack from clarifications
 		const boostedAttack = Math.round(baseAttack * (1 + boostPercent / 100));
 		const expiryTime = Date.now() + durationSeconds * 1000;
 
@@ -178,7 +179,7 @@ export class GameStateManager {
 	 * Remove boost effect (when expired)
 	 */
 	removeBoost(): GameState {
-		const baseAttack = 20; // Knight base attack
+		const baseAttack = GameStateManager.BASE_KNIGHT_ATTACK; // Knight base attack
 		this.setState({
 			knightAttack: baseAttack,
 			boostActive: false,
@@ -266,7 +267,7 @@ export class GameStateManager {
 	getStats(): {
 		uptime: number;
 		totalDonations: number;
-		averageScore: number;
+		currentScore: number;
 		currentWave: number;
 	} {
 		const uptime =
@@ -277,7 +278,7 @@ export class GameStateManager {
 		return {
 			uptime,
 			totalDonations: this.gameState.activeDonations.length,
-			averageScore: this.gameState.score,
+			currentScore: this.gameState.score,
 			currentWave: this.gameState.wave,
 		};
 	}
@@ -290,7 +291,7 @@ export class GameStateManager {
 			gameId,
 			status: "STOPPED",
 			knightHealth: 100,
-			knightAttack: 20, // Base attack from clarifications
+			knightAttack: GameStateManager.BASE_KNIGHT_ATTACK, // Base attack from clarifications
 			score: 0,
 			wave: 1,
 			boostActive: false,

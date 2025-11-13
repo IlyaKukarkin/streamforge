@@ -6,6 +6,7 @@ export class RateLimiter {
 	private config: Config;
 	private globalState: RateLimitEntry;
 	private userStates: Map<string, RateLimitEntry> = new Map();
+	private cleanupInterval: ReturnType<typeof setInterval>;
 
 	constructor(config: Config) {
 		this.config = config;
@@ -16,9 +17,18 @@ export class RateLimiter {
 		};
 
 		// Clean up old user states periodically
-		setInterval(() => {
+		this.cleanupInterval = setInterval(() => {
 			this.cleanupOldStates();
 		}, 60000); // Every minute
+	}
+
+	/**
+	 * Dispose of the rate limiter and clean up resources
+	 */
+	dispose(): void {
+		if (this.cleanupInterval) {
+			clearInterval(this.cleanupInterval);
+		}
 	}
 
 	/**

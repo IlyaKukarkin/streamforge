@@ -111,7 +111,7 @@ class StreamForgeServer {
 				if (message.data) {
 					try {
 						// Update game state and broadcast to other clients
-						this.gameStateManager.updateState(message.data as any);
+						this.gameStateManager.updateFromGame(message.data as any);
 						this.broadcastGameState(ws); // Exclude sender
 					} catch (error) {
 						logger.error("Error updating game state:", {
@@ -202,9 +202,6 @@ class StreamForgeServer {
 					eventType: donation.eventType,
 				});
 
-				// Mark as processed
-				this.donationQueue.markDonationProcessed(donation.donationId);
-
 				// Broadcast donation event to all clients
 				this.broadcastToAll({
 					type: "donation_event",
@@ -237,7 +234,7 @@ class StreamForgeServer {
 						100 - gameState.knightHealth,
 					);
 					if (healAmount > 0) {
-						this.gameStateManager.updateState({
+						this.gameStateManager.updateFromGame({
 							knightHealth: gameState.knightHealth + healAmount,
 						});
 					}
@@ -246,7 +243,7 @@ class StreamForgeServer {
 
 				case "enemy_wave":
 					// Increase score for enemy waves (representing difficulty)
-					this.gameStateManager.updateState({
+					this.gameStateManager.updateFromGame({
 						score: gameState.score + donation.amount,
 					});
 					break;
@@ -330,8 +327,9 @@ async function main(): Promise<void> {
 	}
 }
 
-// Start the server if this file is run directly
-if (require.main === module) {
+// Start the server if this file is run directly (ES module check)
+const isMainModule = import.meta.url === Bun.main;
+if (isMainModule) {
 	main().catch((error) => {
 		console.error("Failed to start StreamForge server:", error);
 		process.exit(1);
