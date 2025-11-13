@@ -17,6 +17,7 @@ export class GameWebSocketServer {
 	private gameStateManager: GameStateManager;
 	private donationQueue: DonationQueue;
 	private connectedClients: Map<string, ConnectionState> = new Map();
+	private socketToClient: Map<WebSocket, string> = new Map(); // Map sockets to client IDs
 	private messageHandlers: Map<string, Function> = new Map();
 
 	constructor(
@@ -56,13 +57,8 @@ export class GameWebSocketServer {
 		this.server.on("connection", this.handleConnection.bind(this));
 		this.server.on("error", this.handleServerError.bind(this));
 
-		// Listen for donation events from the queue
-		this.donationQueue.onDonationProcessed((donation) => {
-			this.broadcastDonation(donation);
-		});
-
 		// Listen for game state changes
-		this.gameStateManager.onStateChange((gameState) => {
+		this.gameStateManager.subscribe((gameState) => {
 			this.broadcastGameState(gameState);
 		});
 	}
@@ -84,6 +80,7 @@ export class GameWebSocketServer {
 		};
 
 		this.connectedClients.set(clientId, connectionState);
+		this.socketToClient.set(ws, clientId); // Track socket-to-client mapping
 
 		// Setup client-specific handlers
 		ws.on("message", (data: Buffer) => {
@@ -92,6 +89,7 @@ export class GameWebSocketServer {
 
 		ws.on("close", (code: number, reason: Buffer) => {
 			this.handleDisconnection(clientId, code, reason.toString());
+			this.socketToClient.delete(ws); // Clean up socket mapping
 		});
 
 		ws.on("error", (error: Error) => {
@@ -110,7 +108,7 @@ export class GameWebSocketServer {
 			type: "connection_established",
 			data: {
 				clientId,
-				gameState: this.gameStateManager.getCurrentState(),
+				gameState: this.gameStateManager.getState(),
 				serverTime: Date.now(),
 			},
 		});
@@ -151,7 +149,7 @@ export class GameWebSocketServer {
 	): void {
 		try {
 			const update = message.data as GameStateUpdate;
-			this.gameStateManager.updateGameState(update);
+			this.gameStateManager.updateFromGame(update);
 
 			logger.debug(`Game state updated by ${clientId}:`, update);
 		} catch (error) {
@@ -167,7 +165,10 @@ export class GameWebSocketServer {
 	): void {
 		try {
 			const stats = message.data as StatsUpdate;
-			this.gameStateManager.updateStats(stats);
+			// Stats updates could be handled by updating game state
+			this.gameStateManager.updateFromGame({
+				score: stats.score,
+			});
 
 			logger.debug(`Stats updated by ${clientId}:`, stats);
 		} catch (error) {
@@ -262,7 +263,7 @@ export class GameWebSocketServer {
 		const messageStr = JSON.stringify(message);
 		const deadClients: string[] = [];
 
-		this.server.clients.forEach((ws, index) => {
+		this.server.clients.forEach((ws) => {
 			const clientId = this.findClientIdBySocket(ws);
 			const client = clientId ? this.connectedClients.get(clientId) : null;
 
@@ -286,6 +287,13 @@ export class GameWebSocketServer {
 		// Clean up dead connections
 		deadClients.forEach((clientId) => {
 			this.connectedClients.delete(clientId);
+			// Also remove from reverse map
+			for (const [socket, id] of this.socketToClient.entries()) {
+				if (id === clientId) {
+					this.socketToClient.delete(socket);
+					break;
+				}
+			}
 			logger.debug(`Removed dead client: ${clientId}`);
 		});
 	}
@@ -311,7 +319,7 @@ export class GameWebSocketServer {
 	}
 
 	private sendGameStateUpdate(ws: WebSocket): void {
-		const gameState = this.gameStateManager.getCurrentState();
+		const gameState = this.gameStateManager.getState();
 		this.sendMessage(ws, {
 			type: "game_state_update",
 			data: gameState,
@@ -319,12 +327,7 @@ export class GameWebSocketServer {
 	}
 
 	private findClientIdBySocket(socket: WebSocket): string | null {
-		for (const [clientId, client] of this.connectedClients.entries()) {
-			// This is a simplified approach - in production, you'd want a more robust way
-			// to associate sockets with client IDs
-			return clientId;
-		}
-		return null;
+		return this.socketToClient.get(socket) || null;
 	}
 
 	private generateClientId(): string {

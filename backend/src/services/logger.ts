@@ -1,4 +1,6 @@
 // Logging service for StreamForge backend
+import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import type { Config, LogEntry, LogLevel } from "../types/index.js";
 
 export class Logger {
@@ -226,20 +228,18 @@ export class Logger {
 
 			// Ensure log directory exists
 			const logPath = this.config.logFile;
-			const logDir = logPath.substring(0, logPath.lastIndexOf("/"));
+			const logDir = dirname(logPath);
 
 			if (logDir) {
 				try {
-					await Bun.write(`${logDir}/.keep`, ""); // Create directory
+					await mkdir(logDir, { recursive: true });
 				} catch (error) {
 					// Directory might already exist, ignore error
 				}
 			}
 
-			// Append to log file
-			const file = Bun.file(logPath);
-			const content = (await file.exists()) ? await file.text() : "";
-			await Bun.write(logPath, content + logLine);
+			// Append to log file atomically
+			await Bun.write(logPath, logLine, { createPath: true, append: true });
 		} catch (error) {
 			// Fallback to console if file writing fails
 			console.error(`Failed to write to log file: ${error}`);

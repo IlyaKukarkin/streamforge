@@ -3,17 +3,23 @@
 import * as dotenv from "dotenv";
 import type { Config } from "./types/index.js";
 
-// Load .env file
-dotenv.config();
-
 // Load environment variables with defaults and validation
 export function loadConfig(): Config {
+	// Load .env file
+	dotenv.config();
+	
+	const websocketPort = parseInt(process.env.WEBSOCKET_PORT ?? "3001", 10);
+	const rawLogLevel = process.env.LOG_LEVEL ?? "info";
+	const logLevel = (["debug", "info", "warn", "error"].includes(rawLogLevel)
+		? rawLogLevel
+		: "info") as Config["logLevel"];
+	
 	const config: Config = {
 		port: parseInt(process.env.PORT ?? "3000", 10),
-		websocketPort: parseInt(process.env.WEBSOCKET_PORT ?? "3001", 10),
+		websocketPort: websocketPort,
 		adminApiKey:
 			process.env.ADMIN_API_KEY ?? "dev-admin-key-change-in-production",
-		logLevel: (process.env.LOG_LEVEL as Config["logLevel"]) ?? "info",
+		logLevel: logLevel,
 		logFile: process.env.LOG_FILE ?? "logs/backend.log",
 		donationRateLimit: parseInt(process.env.DONATION_RATE_LIMIT ?? "10", 10),
 		donationRateWindow: parseInt(
@@ -35,7 +41,7 @@ export function loadConfig(): Config {
 			process.env.ENABLE_FILE_LOGGING?.toLowerCase() === "true",
 		enableCors: process.env.ENABLE_CORS?.toLowerCase() !== "false", // default true
 		websocket: {
-			port: parseInt(process.env.WEBSOCKET_PORT ?? "3001", 10),
+			port: websocketPort,
 			pingInterval: 30000,
 			connectionTimeout: 60000,
 		},

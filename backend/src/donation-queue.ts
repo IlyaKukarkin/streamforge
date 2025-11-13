@@ -4,6 +4,7 @@ import type {
 	DonationEvent,
 	DonationEventType,
 } from "./types/index.js";
+import { logger } from "./services/logger.js";
 
 interface CooldownState {
 	lastEventTime: number;
@@ -15,6 +16,7 @@ export class DonationQueue {
 	private cooldowns: Map<DonationEventType, CooldownState> = new Map();
 	private config: Config;
 	private processing = false;
+	private totalProcessedCount = 0;
 
 	constructor(config: Config) {
 		this.config = config;
@@ -49,7 +51,11 @@ export class DonationQueue {
 	 * Remove and return next donation from queue
 	 */
 	dequeue(): DonationEvent | null {
-		return this.queue.shift() || null;
+		const donation = this.queue.shift() || null;
+		if (donation) {
+			this.totalProcessedCount++;
+		}
+		return donation;
 	}
 
 	/**
@@ -174,13 +180,8 @@ export class DonationQueue {
 			}
 		}
 
-		// Get total processed from cooldown last event times
-		let totalProcessed = 0;
-		for (const cooldown of this.cooldowns.values()) {
-			if (cooldown.lastEventTime > 0) {
-				totalProcessed++;
-			}
-		}
+		// Get total processed from counter
+		const totalProcessed = this.totalProcessedCount;
 
 		return {
 			queueLength: this.queue.length,
@@ -210,7 +211,7 @@ export class DonationQueue {
 				try {
 					await handler(donation);
 				} catch (error) {
-					console.error(
+					logger.error(
 						`Failed to process donation ${donation.donationId}:`,
 						error,
 					);

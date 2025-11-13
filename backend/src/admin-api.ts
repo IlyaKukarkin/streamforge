@@ -118,7 +118,7 @@ export class AdminApiServer {
 	private handleGetStatus(req: Request, res: Response): void {
 		try {
 			const gameState = this.dependencies.gameStateManager.getState();
-			const queueStats = this.dependencies.donationQueue.getQueueStats();
+			const queueStats = this.dependencies.donationQueue.getStats();
 
 			res.json({
 				server: {
@@ -147,7 +147,7 @@ export class AdminApiServer {
 	private handleUpdateGameState(req: Request, res: Response): void {
 		try {
 			const updates = req.body;
-			this.dependencies.gameStateManager.updateState(updates);
+			this.dependencies.gameStateManager.updateFromGame(updates);
 			const newState = this.dependencies.gameStateManager.getState();
 
 			logger.info("Game state updated via API", { updates });
@@ -161,7 +161,7 @@ export class AdminApiServer {
 	private handleResetGame(req: Request, res: Response): void {
 		try {
 			this.dependencies.gameStateManager.resetGame();
-			this.dependencies.donationQueue.clearQueue();
+			this.dependencies.donationQueue.clear();
 
 			const gameState = this.dependencies.gameStateManager.getState();
 
@@ -178,7 +178,7 @@ export class AdminApiServer {
 
 	private handleGetDonationQueue(req: Request, res: Response): void {
 		try {
-			const queueData = this.dependencies.donationQueue.getQueueData();
+			const queueData = this.dependencies.donationQueue.getAll();
 			res.json(queueData);
 		} catch (error) {
 			logger.error("Error getting donation queue:", error as Error);
@@ -191,24 +191,23 @@ export class AdminApiServer {
 			const {
 				username = "TestUser",
 				amount = 5.0,
-				eventType = "speed_boost",
+				eventType = "BOOST",
 				message = "Test donation",
 			} = req.body;
 
 			// Create test donation
 			const testDonation = {
 				donationId: `test_${Date.now()}`,
-				username,
+				viewerName: username,
 				amount: Number(amount),
 				eventType,
 				message,
-				timestamp: Date.now(),
+				createdAt: Date.now(),
 				processed: false,
-				parameters: {},
 			};
 
 			// Add to queue
-			this.dependencies.donationQueue.enqueueDonation(testDonation);
+			this.dependencies.donationQueue.enqueue(testDonation);
 
 			logger.info("Test donation created:", testDonation);
 			res.json({
@@ -223,7 +222,7 @@ export class AdminApiServer {
 
 	private handleClearDonationQueue(req: Request, res: Response): void {
 		try {
-			this.dependencies.donationQueue.clearQueue();
+			this.dependencies.donationQueue.clear();
 
 			logger.info("Donation queue cleared via API");
 			res.json({ success: true });
@@ -235,7 +234,7 @@ export class AdminApiServer {
 
 	private handleGetRateLimits(req: Request, res: Response): void {
 		try {
-			const rateLimitStats = this.dependencies.rateLimiter.getStats();
+			const rateLimitStats = this.dependencies.rateLimiter.getStatus();
 			res.json(rateLimitStats);
 		} catch (error) {
 			logger.error("Error getting rate limit stats:", error as Error);
@@ -245,7 +244,7 @@ export class AdminApiServer {
 
 	private handleResetRateLimits(req: Request, res: Response): void {
 		try {
-			this.dependencies.rateLimiter.resetAllLimits();
+			this.dependencies.rateLimiter.reset();
 
 			logger.info("Rate limits reset via API");
 			res.json({ success: true });

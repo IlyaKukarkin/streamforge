@@ -141,7 +141,7 @@ Represents the current state of the OBS overlay display.
 
 ## Relationships
 
-```
+```text
 GameState
 ├── Knight (1:1)
 ├── Enemy[] (1:many)

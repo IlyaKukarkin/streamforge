@@ -236,7 +236,8 @@ func cleanup_defeated_enemies() -> void:
 	var enemies_to_remove: Array[Node2D] = []
 	
 	for enemy in active_enemies:
-		if not is_instance_valid(enemy) or enemy.get("is_defeated", false):
+		var is_defeated = enemy.get("is_defeated") if is_instance_valid(enemy) else true
+		if not is_instance_valid(enemy) or is_defeated:
 			enemies_to_remove.append(enemy)
 	
 	for enemy in enemies_to_remove:
