@@ -68,37 +68,27 @@ func _physics_process(delta):
 	
 	# Move the character
 	move_and_slide()
+	
+	# Check screen boundaries
+	_check_screen_boundaries()
 
 func _handle_input():
 	"""Process player input"""
-	# Attack input
+	# Attack input (optional - could be automatic for endless game)
 	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("attack"):
 		_try_attack()
 
 func _handle_movement(delta):
-	"""Handle character movement"""
-	# Get input direction
-	var input_direction = Vector2.ZERO
-	
-	if Input.is_action_pressed("ui_right") or Input.is_action_pressed("move_right"):
-		input_direction.x += 1
-	if Input.is_action_pressed("ui_left") or Input.is_action_pressed("move_left"):
-		input_direction.x -= 1
-	if Input.is_action_pressed("ui_down") or Input.is_action_pressed("move_down"):
-		input_direction.y += 1
-	if Input.is_action_pressed("ui_up") or Input.is_action_pressed("move_up"):
-		input_direction.y -= 1
-	
-	# Normalize diagonal movement
-	if input_direction != Vector2.ZERO:
-		input_direction = input_direction.normalized()
+	"""Handle character movement - automatic rightward movement for endless game"""
+	# Automatic rightward movement for endless game
+	var movement_direction = Vector2.RIGHT
 	
 	# Apply movement
-	velocity = input_direction * current_speed
+	velocity = movement_direction * current_speed
 	
-	# Update sprite direction (face movement direction)
-	if input_direction.x != 0:
-		sprite.scale.x = abs(sprite.scale.x) * sign(input_direction.x)
+	# Ensure sprite faces right
+	if sprite:
+		sprite.scale.x = abs(sprite.scale.x)
 
 func _try_attack():
 	"""Attempt to perform an attack"""
@@ -127,13 +117,16 @@ func _check_attack_hits():
 
 func _attack_enemy(enemy: Node2D):
 	"""Deal damage to an enemy"""
-	var damage = current_damage
+	var damage = Combat.calculate_knight_damage(self)
 	var enemy_position = enemy.global_position
 	
 	print("[Knight] Dealing ", damage, " damage to enemy at ", enemy_position)
 	
 	# Apply damage
 	var enemy_died = enemy.take_damage(damage)
+	
+	# Create damage visual feedback
+	Combat.create_damage_number(damage, enemy_position)
 	
 	# Emit damage dealt signal
 	damage_dealt.emit(damage, enemy_position)
@@ -150,6 +143,23 @@ func _update_attack_area_visibility():
 	# For now, we don't have visual feedback, but we could add particles/effects here
 	# The attack area collision remains active
 	pass
+
+func _check_screen_boundaries():
+	"""Keep knight within screen boundaries"""
+	var screen_size = get_viewport_rect().size
+	var margin = 32.0  # Keep knight 32 pixels from edge
+	
+	# Keep knight within horizontal bounds
+	if global_position.x < margin:
+		global_position.x = margin
+	elif global_position.x > screen_size.x - margin:
+		global_position.x = screen_size.x - margin
+	
+	# Keep knight within vertical bounds  
+	if global_position.y < margin:
+		global_position.y = margin
+	elif global_position.y > screen_size.y - margin:
+		global_position.y = screen_size.y - margin
 
 func _on_attack_area_body_entered(body: Node2D):
 	"""Handle enemy entering attack range (only used during active attack)"""
@@ -313,6 +323,17 @@ func reset_knight():
 	
 	speed_boost_active = false
 	damage_boost_active = false
+	speed_boost_multiplier = 1.0
+	damage_boost_multiplier = 1.0
+	
+	# Reset position to spawn point (left side of screen)
+	global_position = Vector2(100, get_viewport_rect().size.y / 2)
+	velocity = Vector2.ZERO
+	
+	# Emit health changed signal to update UI
+	health_changed.emit(health, max_health)
+	
+	print("[Knight] Knight reset to spawn position")
 	speed_boost_multiplier = 1.0
 	damage_boost_multiplier = 1.0
 	

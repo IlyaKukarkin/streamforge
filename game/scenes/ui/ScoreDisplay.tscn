@@ -1,0 +1,103 @@
+[gd_scene load_steps=2 format=3 uid="uid://bpt5wxj8f4kqo"]
+
+[ext_resource type="Script" path="res://scripts/ui/score_display.gd" id="1_0q8wl"]
+
+[node name="ScoreDisplay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_0q8wl")
+
+[node name="ScoreLabel" type="Label" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 0.1
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+text = "Score: 0"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="HealthLabel" type="Label" parent="."]
+layout_mode = 0
+anchor_left = 0.0
+anchor_top = 0.1
+anchor_right = 1.0
+anchor_bottom = 0.2
+offset_left = 20.0
+offset_top = 0.0
+offset_right = -20.0
+offset_bottom = 0.0
+text = "Health: 100/100"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="KillsLabel" type="Label" parent="."]
+layout_mode = 0
+anchor_left = 0.0
+anchor_top = 0.2
+anchor_right = 1.0
+anchor_bottom = 0.3
+offset_left = 20.0
+offset_top = 0.0
+offset_right = -20.0
+offset_bottom = 0.0
+text = "Kills: 0"
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="WaveLabel" type="Label" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 0.1
+offset_left = 680.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+text = "Wave: 1"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="BoostTimer" type="Label" parent="."]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.1
+offset_left = 0.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BoostType" type="Label" parent="."]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.1
+anchor_right = 1.0
+anchor_bottom = 0.2
+offset_left = 0.0
+offset_top = 0.0
+offset_right = -20.0
+offset_bottom = 0.0
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BoostTimerBar" type="ProgressBar" parent="."]
+layout_mode = 0
+anchor_left = 0.3
+anchor_top = 0.05
+anchor_right = 0.7
+anchor_bottom = 0.08
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+max_value = 100.0
+show_percentage = false

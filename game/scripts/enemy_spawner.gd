@@ -291,3 +291,10 @@ func set_wave_number(new_wave: int) -> void:
 	wave_number = max(1, new_wave)
 	current_spawn_interval = max(1.0, base_spawn_interval - (wave_number - 1) * 0.2)
 	print("[EnemySpawner] Set wave number to: ", wave_number)
+
+func reset_wave() -> void:
+	"""Reset wave system to initial state"""
+	wave_number = 1
+	current_spawn_interval = base_spawn_interval
+	spawn_timer = current_spawn_interval
+	print("[EnemySpawner] Reset to wave 1")

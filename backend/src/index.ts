@@ -6,6 +6,7 @@ import { AdminApiServer } from "./admin-api.js";
 import { loadConfig } from "./config.js";
 import { DonationQueue } from "./donation-queue.js";
 import { GameStateManager } from "./game-state.js";
+import { GameStateSyncService } from "./game-state-sync.js";
 import { RateLimiter } from "./middleware/rate-limiter.js";
 import { createLogger, logger } from "./services/logger.js";
 import type { WebSocketMessage } from "./types/index.js";
@@ -17,6 +18,7 @@ class StreamForgeServer {
 	private rateLimiter: RateLimiter;
 	private adminApiServer: AdminApiServer;
 	private wsServer: WebSocketServer;
+	private gameStateSyncService: GameStateSyncService;
 	private connectedClients: Set<WebSocket> = new Set();
 
 	constructor() {
@@ -30,6 +32,9 @@ class StreamForgeServer {
 		this.gameStateManager = new GameStateManager();
 		this.donationQueue = new DonationQueue(this.config);
 		this.rateLimiter = new RateLimiter(this.config);
+		this.gameStateSyncService = new GameStateSyncService(this.config, {
+			gameStateManager: this.gameStateManager,
+		});
 
 		// Initialize servers
 		this.adminApiServer = new AdminApiServer(this.config, {
@@ -113,6 +118,9 @@ class StreamForgeServer {
 						// Update game state and broadcast to other clients
 						this.gameStateManager.updateFromGame(message.data as any);
 						this.broadcastGameState(ws); // Exclude sender
+
+						// Also broadcast to overlay clients
+						this.gameStateSyncService.broadcastGameState();
 					} catch (error) {
 						logger.error("Error updating game state:", {
 							error: (error as Error).message,
@@ -123,6 +131,17 @@ class StreamForgeServer {
 
 			case "client_info":
 				logger.info("Client identified:", message.data);
+
+				// Register overlay clients
+				if (
+					message.data &&
+					typeof message.data === "object" &&
+					"type" in message.data &&
+					message.data.type === "overlay"
+				) {
+					this.gameStateSyncService.registerOverlayClient(ws);
+					logger.info("Overlay client registered");
+				}
 				break;
 
 			default:

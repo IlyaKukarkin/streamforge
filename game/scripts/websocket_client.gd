@@ -222,3 +222,11 @@ func clear_message_queue():
 	"""Clear the message queue"""
 	message_queue.clear()
 	print("[WebSocketClient] Message queue cleared")
+
+func send_game_reset():
+	"""Send game reset notification to backend"""
+	var message = {
+		"type": "game_reset",
+		"timestamp": Time.get_time_dict_from_system()["unix"]
+	}
+	send_message(message)

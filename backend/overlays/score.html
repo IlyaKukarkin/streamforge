@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamForge - Score Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .overlay-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .score-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 15px 25px;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            min-width: 200px;
+        }
+        
+        .score-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        
+        .score-label {
+            color: #ccc;
+        }
+        
+        .score-value {
+            font-weight: bold;
+            color: white;
+        }
+        
+        .health-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 15px 25px;
+            border: 2px solid #FF6B6B;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            min-width: 180px;
+        }
+        
+        .health-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FF6B6B;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .health-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 50%, #CDDC39 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 100%;
+        }
+        
+        .health-text {
+            text-align: center;
+            font-size: 14px;
+            color: white;
+        }
+        
+        .boost-panel {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(138, 43, 226, 0.9);
+            border-radius: 10px;
+            padding: 15px 25px;
+            border: 2px solid #9C27B0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            display: none;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        
+        .boost-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .boost-timer {
+            font-size: 14px;
+            color: #E1BEE7;
+            text-align: center;
+        }
+        
+        .game-over-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            border-radius: 15px;
+            padding: 30px 40px;
+            border: 3px solid #FF5722;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+            display: none;
+            text-align: center;
+            animation: gameOverPulse 1s ease-in-out;
+        }
+        
+        @keyframes gameOverPulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        .game-over-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .game-over-stats {
+            font-size: 18px;
+            color: #FFCDD2;
+            margin: 5px 0;
+        }
+        
+        .wave-indicator {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            background: rgba(33, 150, 243, 0.8);
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 2px solid #2196F3;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .wave-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            margin: 0;
+        }
+        
+        .connection-status {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .connected {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+        }
+        
+        .disconnected {
+            background: rgba(244, 67, 54, 0.8);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- Score Panel -->
+        <div class="score-panel">
+            <div class="score-title">Game Stats</div>
+            <div class="score-item">
+                <span class="score-label">Score:</span>
+                <span class="score-value" id="score">0</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Kills:</span>
+                <span class="score-value" id="kills">0</span>
+            </div>
+        </div>
+        
+        <!-- Health Panel -->
+        <div class="health-panel">
+            <div class="health-title">Knight Health</div>
+            <div class="health-bar">
+                <div class="health-fill" id="healthBar"></div>
+            </div>
+            <div class="health-text" id="healthText">100/100</div>
+        </div>
+        
+        <!-- Wave Indicator -->
+        <div class="wave-indicator">
+            <div class="wave-text">Wave <span id="wave">1</span></div>
+        </div>
+        
+        <!-- Boost Panel -->
+        <div class="boost-panel" id="boostPanel">
+            <div class="boost-title" id="boostType">BOOST ACTIVE</div>
+            <div class="boost-timer" id="boostTimer">00:30 remaining</div>
+        </div>
+        
+        <!-- Game Over Panel -->
+        <div class="game-over-panel" id="gameOverPanel">
+            <div class="game-over-title">GAME OVER</div>
+            <div class="game-over-stats">Final Score: <span id="finalScore">0</span></div>
+            <div class="game-over-stats">Total Kills: <span id="totalKills">0</span></div>
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="connection-status disconnected" id="connectionStatus">
+            Disconnected
+        </div>
+    </div>
+
+    <script>
+        class StreamForgeOverlay {
+            constructor() {
+                this.websocket = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 10;
+                this.reconnectDelay = 3000;
+                this.gameOverTimeout = null;
+                
+                this.elements = {
+                    score: document.getElementById('score'),
+                    kills: document.getElementById('kills'),
+                    wave: document.getElementById('wave'),
+                    healthBar: document.getElementById('healthBar'),
+                    healthText: document.getElementById('healthText'),
+                    boostPanel: document.getElementById('boostPanel'),
+                    boostType: document.getElementById('boostType'),
+                    boostTimer: document.getElementById('boostTimer'),
+                    gameOverPanel: document.getElementById('gameOverPanel'),
+                    finalScore: document.getElementById('finalScore'),
+                    totalKills: document.getElementById('totalKills'),
+                    connectionStatus: document.getElementById('connectionStatus')
+                };
+                
+                this.connect();
+            }
+            
+            connect() {
+                try {
+                    // Connect to WebSocket server
+                    const wsUrl = 'ws://localhost:3001';
+                    this.websocket = new WebSocket(wsUrl);
+                    
+                    this.websocket.onopen = () => {
+                        console.log('[Overlay] Connected to StreamForge backend');
+                        this.reconnectAttempts = 0;
+                        this.updateConnectionStatus(true);
+                        
+                        // Register as overlay client
+                        this.send({
+                            type: 'register_overlay',
+                            client_type: 'score_overlay'
+                        });
+                    };
+                    
+                    this.websocket.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            this.handleMessage(message);
+                        } catch (error) {
+                            console.error('[Overlay] Error parsing message:', error);
+                        }
+                    };
+                    
+                    this.websocket.onclose = () => {
+                        console.log('[Overlay] WebSocket connection closed');
+                        this.updateConnectionStatus(false);
+                        this.scheduleReconnect();
+                    };
+                    
+                    this.websocket.onerror = (error) => {
+                        console.error('[Overlay] WebSocket error:', error);
+                        this.updateConnectionStatus(false);
+                    };
+                    
+                } catch (error) {
+                    console.error('[Overlay] Connection error:', error);
+                    this.scheduleReconnect();
+                }
+            }
+            
+            scheduleReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        console.log(`[Overlay] Reconnecting... attempt ${this.reconnectAttempts}`);
+                        this.connect();
+                    }, this.reconnectDelay);
+                }
+            }
+            
+            send(message) {
+                if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                    this.websocket.send(JSON.stringify(message));
+                }
+            }
+            
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'gamestate_update':
+                        this.updateGameState(message.data);
+                        break;
+                    case 'game_event':
+                        this.handleGameEvent(message.event, message.data);
+                        break;
+                    default:
+                        console.log('[Overlay] Unknown message type:', message.type);
+                }
+            }
+            
+            updateGameState(gameState) {
+                // Update score and kills
+                this.elements.score.textContent = gameState.score || 0;
+                this.elements.kills.textContent = gameState.kills || 0;
+                this.elements.wave.textContent = gameState.wave || 1;
+                
+                // Update health
+                const health = gameState.knight?.health || 0;
+                const maxHealth = gameState.knight?.maxHealth || 100;
+                const healthPercent = (health / maxHealth) * 100;
+                
+                this.elements.healthBar.style.width = `${healthPercent}%`;
+                this.elements.healthText.textContent = `${health}/${maxHealth}`;
+                
+                // Change health bar color based on percentage
+                if (healthPercent <= 25) {
+                    this.elements.healthBar.style.background = '#F44336';
+                } else if (healthPercent <= 50) {
+                    this.elements.healthBar.style.background = '#FF9800';
+                } else {
+                    this.elements.healthBar.style.background = 'linear-gradient(90deg, #4CAF50 0%, #8BC34A 50%, #CDDC39 100%)';
+                }
+                
+                // Update boost status
+                if (gameState.boost?.active) {
+                    this.showBoost(gameState.boost.type, gameState.boost.timeRemaining);
+                } else {
+                    this.hideBoost();
+                }
+                
+                // Handle game over
+                if (gameState.status === 'game_over') {
+                    this.showGameOver(gameState.score, gameState.kills);
+                }
+            }
+            
+            handleGameEvent(eventType, eventData) {
+                switch (eventType) {
+                    case 'score_update':
+                        this.flashElement(this.elements.score);
+                        break;
+                    case 'health_update':
+                        this.flashElement(this.elements.healthBar);
+                        break;
+                    case 'game_over':
+                        this.showGameOver(eventData.finalScore, eventData.totalKills);
+                        break;
+                }
+            }
+            
+            showBoost(boostType, timeRemaining) {
+                this.elements.boostType.textContent = `${boostType.toUpperCase()} ACTIVE`;
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = Math.floor(timeRemaining % 60);
+                this.elements.boostTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} remaining`;
+                
+                this.elements.boostPanel.style.display = 'block';
+            }
+            
+            hideBoost() {
+                this.elements.boostPanel.style.display = 'none';
+            }
+            
+            showGameOver(finalScore, totalKills) {
+                this.elements.finalScore.textContent = finalScore;
+                this.elements.totalKills.textContent = totalKills;
+                this.elements.gameOverPanel.style.display = 'block';
+                
+                // Hide game over after 5 seconds
+                if (this.gameOverTimeout) {
+                    clearTimeout(this.gameOverTimeout);
+                }
+                this.gameOverTimeout = setTimeout(() => {
+                    this.elements.gameOverPanel.style.display = 'none';
+                }, 5000);
+            }
+            
+            updateConnectionStatus(connected) {
+                if (connected) {
+                    this.elements.connectionStatus.textContent = 'Connected';
+                    this.elements.connectionStatus.className = 'connection-status connected';
+                } else {
+                    this.elements.connectionStatus.textContent = 'Disconnected';
+                    this.elements.connectionStatus.className = 'connection-status disconnected';
+                }
+            }
+            
+            flashElement(element) {
+                element.style.animation = 'none';
+                element.offsetHeight; // Trigger reflow
+                element.style.animation = 'pulse 0.5s ease-in-out';
+                
+                setTimeout(() => {
+                    element.style.animation = '';
+                }, 500);
+            }
+        }
+        
+        // Initialize overlay when page loads
+        window.addEventListener('load', () => {
+            new StreamForgeOverlay();
+        });
+    </script>
+</body>
+</html>

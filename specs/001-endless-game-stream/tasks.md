@@ -52,19 +52,19 @@ description: "Task list for endless game stream MVP implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T011 Implement backend WebSocket server in backend/src/server.ts (listen on port 3001)
-- [ ] T012 [P] Implement backend HTTP admin server in backend/src/admin-api.ts (port 3000, routes for /health, /stats, /start, /stop, /pause, /resume, /reset)
-- [ ] T013 [P] Create game state management service in backend/src/game-state.ts (GameState class, CRUD operations, state transitions)
-- [ ] T014 [P] Create donation event queue in backend/src/donation-queue.ts (FIFO queue, rate-limiting logic, cooldown tracking)
-- [ ] T015 [P] Create rate-limiting middleware in backend/src/middleware/rate-limiter.ts (10 donations/60s global, 3 per user)
-- [ ] T016 [P] Create logging service in backend/src/services/logger.ts (file + stdout, JSON format for debugging)
-- [ ] T017 [P] Create TypeScript types/interfaces for all entities in backend/src/types/index.ts (GameState, DonationEvent, Enemy, Knight, OverlayState)
-- [ ] T018 [P] Create Godot game base scene in game/scenes/Game.tscn (root scene with camera, UI layers, enemy spawner)
-- [ ] T019 [P] Create Godot knight scene in game/scenes/Knight.tscn (sprite, collision, input handling)
-- [ ] T020 [P] Create Godot enemy prefab in game/scenes/Enemy.tscn (sprite, health bar, collision, AI placeholder)
-- [ ] T021 [P] Implement Godot WebSocket client in game/scripts/websocket-client.gd (connect to backend, send/receive JSON using JSON.parse_string() and JSON.stringify())
-- [ ] T022 [P] Create backend environment loader in backend/src/config.ts (read .env, export config object with types)
-- [ ] T023 Create backend entry point in backend/src/index.ts (initialize servers, start listening, handle signals for graceful shutdown)
+- [x] T011 Implement backend WebSocket server in backend/src/server.ts (listen on port 3001)
+- [x] T012 [P] Implement backend HTTP admin server in backend/src/admin-api.ts (port 3000, routes for /health, /stats, /start, /stop, /pause, /resume, /reset)
+- [x] T013 [P] Create game state management service in backend/src/game-state.ts (GameState class, CRUD operations, state transitions)
+- [x] T014 [P] Create donation event queue in backend/src/donation-queue.ts (FIFO queue, rate-limiting logic, cooldown tracking)
+- [x] T015 [P] Create rate-limiting middleware in backend/src/middleware/rate-limiter.ts (10 donations/60s global, 3 per user)
+- [x] T016 [P] Create logging service in backend/src/services/logger.ts (file + stdout, JSON format for debugging)
+- [x] T017 [P] Create TypeScript types/interfaces for all entities in backend/src/types/index.ts (GameState, DonationEvent, Enemy, Knight, OverlayState)
+- [x] T018 [P] Create Godot game base scene in game/scenes/Game.tscn (root scene with camera, UI layers, enemy spawner)
+- [x] T019 [P] Create Godot knight scene in game/scenes/Knight.tscn (sprite, collision, input handling)
+- [x] T020 [P] Create Godot enemy prefab in game/scenes/Enemy.tscn (sprite, health bar, collision, AI placeholder)
+- [x] T021 [P] Implement Godot WebSocket client in game/scripts/websocket-client.gd (connect to backend, send/receive JSON using JSON.parse_string() and JSON.stringify())
+- [x] T022 [P] Create backend environment loader in backend/src/config.ts (read .env, export config object with types)
+- [x] T023 Create backend entry point in backend/src/index.ts (initialize servers, start listening, handle signals for graceful shutdown)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -84,18 +84,18 @@ description: "Task list for endless game stream MVP implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Create Knight class in game/scripts/knight.gd (attributes: health, attack, position, sprites, animation state machine)
-- [ ] T025 [P] [US1] Create Enemy class in game/scripts/enemy.gd (attributes: type, health, attack, position, AI pathfinding toward knight)
-- [ ] T026 [P] [US1] Implement enemy spawner in game/scripts/enemy-spawner.gd (spawn GOBLIN/ORC at intervals, manage enemy list)
-- [ ] T027 [US1] Implement combat logic in game/scripts/combat.gd (knight attack vs. enemy, damage calculation, health reduction)
-- [ ] T028 [US1] Implement knight movement in game/scripts/knight.gd (constant rightward movement, collision detection, screen boundaries)
-- [ ] T029 [US1] Implement knight death and reset in game/scripts/game-manager.gd (reset game state, reset score, respawn knight, show "Game Over" screen)
-- [ ] T030 [P] [US1] Create score UI in game/scenes/ui/ScoreDisplay.tscn and game/scripts/ui/score-display.gd (display score at top, update on enemy defeat)
-- [ ] T031 [US1] Connect knight to game state in game/scripts/game-manager.gd (track health, score, wave number; sync with backend periodic updates)
-- [ ] T032 [P] [US1] Implement game loop in game/scripts/game-manager.gd (update knight position, enemy positions, combat, score every frame at 60 FPS)
-- [ ] T033 [US1] Create backend game state sync in backend/src/game-state-sync.ts (periodically send gamestate.update events to overlays)
-- [ ] T034 [P] [US1] Create score overlay in backend/overlays/score.html (display current score, wave, knight health)
-- [ ] T035 [US1] Test P1 user story: Run game, verify knight moves, enemies spawn, score increments, game resets on death
+- [x] T024 [P] [US1] Create Knight class in game/scripts/knight.gd (attributes: health, attack, position, sprites, animation state machine)
+- [x] T025 [P] [US1] Create Enemy class in game/scripts/enemy.gd (attributes: type, health, attack, position, AI pathfinding toward knight)
+- [x] T026 [P] [US1] Implement enemy spawner in game/scripts/enemy-spawner.gd (spawn GOBLIN/ORC at intervals, manage enemy list)
+- [x] T027 [US1] Implement combat logic in game/scripts/combat.gd (knight attack vs. enemy, damage calculation, health reduction)
+- [x] T028 [US1] Implement knight movement in game/scripts/knight.gd (constant rightward movement, collision detection, screen boundaries)
+- [x] T029 [US1] Implement knight death and reset in game/scripts/game-manager.gd (reset game state, reset score, respawn knight, show "Game Over" screen)
+- [x] T030 [P] [US1] Create score UI in game/scenes/ui/ScoreDisplay.tscn and game/scripts/ui/score-display.gd (display score at top, update on enemy defeat)
+- [x] T031 [US1] Connect knight to game state in game/scripts/game-manager.gd (track health, score, wave number; sync with backend periodic updates)
+- [x] T032 [P] [US1] Implement game loop in game/scripts/game-manager.gd (update knight position, enemy positions, combat, score every frame at 60 FPS)
+- [x] T033 [US1] Create backend game state sync in backend/src/game-state-sync.ts (periodically send gamestate.update events to overlays)
+- [x] T034 [P] [US1] Create score overlay in backend/overlays/score.html (display current score, wave, knight health)
+- [x] T035 [US1] Test P1 user story: Run game, verify knight moves, enemies spawn, score increments, game resets on death
 
 **Checkpoint**: User Story 1 is fully functional and testable independently
 

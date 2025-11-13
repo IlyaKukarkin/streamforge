@@ -7,14 +7,22 @@ var is_connected: bool = false
 var connection_retry_timer: float = 0.0
 const CONNECTION_RETRY_DELAY: float = 5.0
 
+# Periodic sync
+var sync_timer: float = 0.0
+const SYNC_INTERVAL: float = 2.0  # Sync every 2 seconds
+
+# Performance monitoring
+var frame_count: int = 0
+var fps_timer: float = 0.0
+var current_fps: float = 60.0
+var delta_accumulator: float = 0.0
+const TARGET_FPS: float = 60.0
+const FPS_UPDATE_INTERVAL: float = 1.0  # Update FPS display every second
+
 # Game state
 var knight: Knight
 var enemy_spawner: EnemySpawner
-var ui_score: Label
-var ui_health: Label
-var ui_boost_timer: Label
-var ui_boost_type: Label
-var boost_timer_bar: ProgressBar
+var score_display: ScoreDisplay
 
 # Current game stats
 var score: int = 0
@@ -54,18 +62,14 @@ func _setup_game_references():
 	"""Find and cache references to game objects"""
 	knight = get_node("../Knight") as Knight
 	enemy_spawner = get_node("../EnemySpawner") as EnemySpawner
-	
-	# UI references
-	ui_score = get_node("../UI/ScoreLabel") as Label
-	ui_health = get_node("../UI/HealthLabel") as Label
-	ui_boost_timer = get_node("../UI/BoostTimer") as Label
-	ui_boost_type = get_node("../UI/BoostType") as Label
-	boost_timer_bar = get_node("../UI/BoostTimerBar") as ProgressBar
+	score_display = get_node("../UI") as ScoreDisplay
 	
 	if not knight:
 		push_error("[GameManager] Could not find Knight node")
 	if not enemy_spawner:
 		push_error("[GameManager] Could not find EnemySpawner node")
+	if not score_display:
+		push_error("[GameManager] Could not find ScoreDisplay UI")
 
 func _setup_game_signals():
 	"""Connect to game object signals"""
@@ -73,6 +77,7 @@ func _setup_game_signals():
 		knight.health_changed.connect(_on_knight_health_changed)
 		knight.enemy_killed.connect(_on_enemy_killed)
 		knight.damage_dealt.connect(_on_damage_dealt)
+		knight.knight_died.connect(_on_knight_died)
 	
 	if enemy_spawner:
 		enemy_spawner.enemy_spawned.connect(_on_enemy_spawned)
@@ -84,6 +89,9 @@ func _connect_to_backend():
 	websocket_client.connect_to_server(ws_url)
 
 func _process(delta):
+	# Performance monitoring
+	_update_performance_metrics(delta)
+	
 	# Handle connection retry
 	if not is_connected:
 		connection_retry_timer += delta
@@ -99,32 +107,33 @@ func _process(delta):
 		else:
 			_update_boost_ui(time_remaining)
 	
+	# Periodic game state sync
+	sync_timer += delta
+	if sync_timer >= SYNC_INTERVAL:
+		sync_timer = 0.0
+		_send_detailed_game_state()
+	
 	# Update UI
 	_update_ui()
 
 func _update_ui():
 	"""Update all UI elements with current game state"""
-	if ui_score:
-		ui_score.text = "Score: " + str(score)
-	
-	if ui_health and knight:
-		ui_health.text = "Health: " + str(knight.health) + "/" + str(knight.max_health)
+	if score_display:
+		score_display.update_score(score)
+		if knight:
+			score_display.update_health(knight.health, knight.max_health)
+		score_display.update_kills(kills)
+		if enemy_spawner:
+			score_display.update_wave(enemy_spawner.wave_number)
 
 func _update_boost_ui(time_remaining: float):
 	"""Update boost-related UI elements"""
-	if ui_boost_timer:
-		ui_boost_timer.text = "Boost: %.1fs" % time_remaining
-	
-	if ui_boost_type:
+	if score_display:
+		var original_duration = _get_boost_duration(active_boost)
 		var boost_text = active_boost
 		if boost_stacks > 1:
 			boost_text += " x" + str(boost_stacks)
-		ui_boost_type.text = boost_text
-	
-	if boost_timer_bar:
-		var original_duration = _get_boost_duration(active_boost)
-		var progress = time_remaining / original_duration
-		boost_timer_bar.value = progress * 100
+		score_display.update_boost_timer(time_remaining, original_duration, boost_text)
 
 func _get_boost_duration(boost_type: String) -> float:
 	"""Get the duration for a specific boost type"""
@@ -296,7 +305,20 @@ func _on_knight_health_changed(new_health: int, max_health: int):
 func _on_enemy_killed(enemy_position: Vector2, enemy_type: String):
 	"""Handle enemy death events"""
 	kills += 1
-	score += 10  # Base score per kill
+	
+	# Calculate score based on enemy type using Combat system
+	var enemy_max_health = _get_enemy_max_health(enemy_type)
+	var score_gain = Combat.calculate_score_for_kill(enemy_type, enemy_max_health)
+	score += score_gain
+	
+	# Visual feedback
+	if score_display:
+		score_display.flash_score()
+	
+	print("[GameManager] Enemy killed: ", enemy_type, " - Score +", score_gain)
+	
+	# Update UI
+	_update_ui()
 	
 	# Send updated stats to backend
 	_send_game_stats()
@@ -348,6 +370,41 @@ func _send_game_stats():
 	websocket_client.send_message(stats)
 	game_stats_updated.emit(stats["data"])
 
+func _send_detailed_game_state():
+	"""Send complete game state to backend for overlays"""
+	if not is_connected or not websocket_client:
+		return
+	
+	var game_state = {
+		"type": "game_state_update",
+		"data": {
+			"score": score,
+			"kills": kills,
+			"damage_dealt": damage_dealt,
+			"damage_taken": damage_taken,
+			"knight": {
+				"health": knight.health if knight else 0,
+				"max_health": knight.max_health if knight else 0,
+				"position": {
+					"x": knight.global_position.x if knight else 0,
+					"y": knight.global_position.y if knight else 0
+				},
+				"alive": knight.is_alive() if knight else false
+			},
+			"wave": enemy_spawner.wave_number if enemy_spawner else 1,
+			"active_enemies": enemy_spawner.active_enemies.size() if enemy_spawner else 0,
+			"boost": {
+				"active": active_boost != "",
+				"type": active_boost,
+				"stacks": boost_stacks,
+				"time_remaining": max(0, boost_end_time - Time.get_time_dict_from_system()["unix"]) if active_boost != "" else 0
+			},
+			"timestamp": Time.get_time_dict_from_system()["unix"]
+		}
+	}
+	
+	websocket_client.send_message(game_state)
+
 # Public API for external systems
 func get_current_stats() -> Dictionary:
 	"""Get current game statistics"""
@@ -369,3 +426,125 @@ func add_score(points: int):
 	"""Add points to score (for special events)"""
 	score += points
 	_send_game_stats()
+
+func _get_enemy_max_health(enemy_type: String) -> int:
+	"""Get maximum health for enemy type"""
+	match enemy_type:
+		"goblin":
+			return 30
+		"orc":
+			return 60
+		"dragon":
+			return 150
+		_:
+			return 30
+
+func _update_performance_metrics(delta: float):
+	"""Update FPS and performance tracking"""
+	frame_count += 1
+	fps_timer += delta
+	delta_accumulator += delta
+	
+	# Update FPS calculation every second
+	if fps_timer >= FPS_UPDATE_INTERVAL:
+		current_fps = frame_count / fps_timer
+		frame_count = 0
+		fps_timer = 0.0
+		
+		# Log performance warnings if FPS drops significantly
+		if current_fps < TARGET_FPS * 0.8:  # Less than 48 FPS
+			print("[GameManager] Performance warning: FPS dropped to ", current_fps)
+		
+		# Update performance in detailed game state
+		_check_performance_issues()
+
+func _check_performance_issues():
+	"""Check for performance issues and log them"""
+	if current_fps < 30.0:
+		print("[GameManager] Critical performance issue: FPS = ", current_fps)
+		# Could implement automatic quality reduction here
+	elif current_fps < 45.0:
+		print("[GameManager] Performance degradation: FPS = ", current_fps)
+
+func get_performance_stats() -> Dictionary:
+	"""Get current performance statistics"""
+	return {
+		"fps": current_fps,
+		"target_fps": TARGET_FPS,
+		"frame_count": frame_count,
+		"active_enemies": enemy_spawner.active_enemies.size() if enemy_spawner else 0
+	}
+
+func _on_knight_died():
+	"""Handle knight death - show game over and reset after delay"""
+	print("[GameManager] Knight died! Final score: ", score, " kills: ", kills)
+	
+	# Show game over UI
+	_show_game_over_screen()
+	
+	# Wait before reset
+	await get_tree().create_timer(3.0).timeout
+	
+	# Reset the game
+	_reset_game()
+
+func _show_game_over_screen():
+	"""Display game over screen with final stats"""
+	# Update UI to show game over
+	if score_display:
+		score_display.show_game_over(score, kills)
+	
+	# Send final stats to backend
+	_send_game_over_stats()
+	
+	print("[GameManager] Game Over - Score: ", score, ", Kills: ", kills, ", Damage Dealt: ", damage_dealt)
+
+func _reset_game():
+	"""Reset the game state to start over"""
+	print("[GameManager] Resetting game...")
+	
+	# Reset game stats
+	score = 0
+	kills = 0
+	damage_dealt = 0
+	damage_taken = 0
+	
+	# Reset boost system
+	active_boost = ""
+	boost_end_time = 0.0
+	boost_stacks = 0
+	
+	# Reset knight
+	if knight:
+		knight.reset_knight()
+	
+	# Clear all enemies
+	if enemy_spawner:
+		enemy_spawner.clear_all_enemies()
+		enemy_spawner.reset_wave()
+	
+	# Reset UI
+	if score_display:
+		score_display.reset_display()
+	
+	# Update UI
+	_update_ui()
+	
+	# Send reset notification to backend
+	websocket_client.send_game_reset()
+	
+	print("[GameManager] Game reset complete")
+
+func _send_game_over_stats():
+	"""Send final game statistics to backend"""
+	var final_stats = {
+		"event": "game_over",
+		"final_score": score,
+		"total_kills": kills,
+		"damage_dealt": damage_dealt,
+		"damage_taken": damage_taken,
+		"game_duration": Time.get_time_dict_from_system()["unix"] - 0  # Would need start time tracking
+	}
+	
+	if websocket_client:
+		websocket_client.send_message(final_stats)
