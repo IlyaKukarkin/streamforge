@@ -155,20 +155,21 @@ Key settings in `project.godot`:
 
 **Connection:**
 ```gdscript
-# In websocket_client.gd
-const BACKEND_URL = "ws://localhost:3001/game"
+# In your game script
+@onready var ws_client = $WebSocketClient
 
 func _ready():
-    websocket.connect_to_url(BACKEND_URL)
-    websocket.message_received.connect(_on_message_received)
+    ws_client.connect_to_server("ws://localhost:3001/game")
+    ws_client.donation_received.connect(_on_donation_received)
+    ws_client.game_state_received.connect(_on_game_state_received)
+    ws_client.connection_changed.connect(_on_connection_changed)
 ```
 
 **Message Handling:**
 ```gdscript
-func _on_message_received(message: String):
-    var data = JSON.parse_string(message)
-    if data.type == "donation.received":
-        GameManager.apply_donation_event(data.payload)
+func _on_donation_received(donation_data: Dictionary):
+    # donation_data already parsed
+    GameManager.apply_donation_event(donation_data)
 ```
 
 ## 🎨 Assets

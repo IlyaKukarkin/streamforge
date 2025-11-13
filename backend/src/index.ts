@@ -347,7 +347,12 @@ async function main(): Promise<void> {
 }
 
 // Start the server if this file is run directly (ES module check)
-const isMainModule = import.meta.url === Bun.main;
+if (import.meta.url === `file://${process.argv[1]}`) {
+	main().catch((error) => {
+		console.error("Failed to start StreamForge server:", error);
+		process.exit(1);
+	});
+}
 if (isMainModule) {
 	main().catch((error) => {
 		console.error("Failed to start StreamForge server:", error);

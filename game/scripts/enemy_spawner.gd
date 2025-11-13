@@ -98,7 +98,7 @@ func spawn_enemy(enemy_type: String = "goblin") -> Node2D:
 	# Add to scene and track
 	get_parent().add_child(enemy)
 	active_enemies.append(enemy)
-	wave_in_progress = true  # Mark wave as active when enemies are spawned
+	wave_in_progress = true
 	
 	# Connect enemy signals
 	if enemy.has_signal("enemy_defeated"):
@@ -122,6 +122,7 @@ func spawn_wave(enemy_count: int = 0) -> void:
 		if should_spawn_enemy():
 			var enemy_type = get_random_enemy_type()
 			spawn_enemy(enemy_type)
+	wave_in_progress = true
 
 func get_random_spawn_position() -> Vector2:
 	"""Get a random position around the knight, outside min distance"""
@@ -259,6 +260,7 @@ func complete_wave() -> void:
 	current_spawn_interval = max(1.0, base_spawn_interval - (wave_number - 1) * 0.2)
 	
 	print("[EnemySpawner] Starting wave ", wave_number, " with spawn interval: ", current_spawn_interval)
+	wave_in_progress = false
 
 # Signal handlers
 func _on_enemy_defeated(enemy_position: Vector2, enemy_type: String):

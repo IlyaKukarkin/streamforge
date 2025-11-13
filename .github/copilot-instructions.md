@@ -10,13 +10,13 @@ Auto-generated from all feature plans. Last updated: 2025-11-11
 
 ```text
 backend/          # Bun + TypeScript backend
-  src/
-  tests/
+	src/
+	tests/
 game/             # Godot 4 game client
-  scripts/
-  scenes/
+	scripts/
+	scenes/
 specs/            # Feature specifications
-  001-endless-game-stream/
+	001-endless-game-stream/
 .specify/         # Specification templates and tooling
 docs/             # Project documentation
 ```
