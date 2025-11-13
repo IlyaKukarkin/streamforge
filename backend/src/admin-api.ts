@@ -88,6 +88,7 @@ export class AdminApiServer {
 			this.handleGetDonationQueue.bind(this),
 		);
 		this.app.post("/api/donations/test", this.handleTestDonation.bind(this));
+		this.app.post("/api/donation", this.handleDonation.bind(this));
 		this.app.delete(
 			"/api/donations/clear",
 			this.handleClearDonationQueue.bind(this),
@@ -215,8 +216,107 @@ export class AdminApiServer {
 				donation: testDonation,
 			});
 		} catch (error) {
-			logger.error("Error creating test donation:", error as Error);
+			logger.error("Error creating test donation:", {
+				error: (error as Error).message,
+			});
 			res.status(400).json({ error: "Invalid test donation data" });
+		}
+	}
+
+	private handleDonation(req: Request, res: Response): void {
+		try {
+			const { viewerId, viewerName, amount, eventType, message } = req.body;
+
+			// Validate required fields
+			if (
+				!viewerId ||
+				!viewerName ||
+				typeof amount !== "number" ||
+				amount <= 0
+			) {
+				res.status(400).json({
+					error:
+						"Missing or invalid required fields: viewerId, viewerName, amount",
+				});
+				return;
+			}
+
+			// Create donation object (this would typically come from a donation handler)
+			const donation = {
+				donationId: `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+				viewerId,
+				viewerName,
+				amount,
+				eventType: eventType || (amount >= 5 ? "BOOST" : "HEAL"),
+				status: "PENDING" as const,
+				createdAt: Date.now(),
+				parameters: this.generateDonationParameters(
+					eventType || (amount >= 5 ? "BOOST" : "HEAL"),
+					amount,
+				),
+				metadata: {
+					source: "admin_api",
+					message: message || "",
+				},
+			};
+
+			// Add to queue for processing
+			const queueResult = this.dependencies.donationQueue.enqueue(donation);
+
+			if (queueResult.success) {
+				res.json({
+					success: true,
+					donation: {
+						donationId: donation.donationId,
+						viewerName: donation.viewerName,
+						amount: donation.amount,
+						eventType: donation.eventType,
+						status: donation.status,
+						queuePosition: this.dependencies.donationQueue.length(),
+					},
+				});
+
+				logger.info("Donation received via API", {
+					donationId: donation.donationId,
+					viewerName: donation.viewerName,
+					amount: donation.amount,
+					eventType: donation.eventType,
+				});
+			} else {
+				res.status(429).json({
+					error: "Donation rejected",
+					reason: queueResult.reason,
+				});
+			}
+		} catch (error) {
+			logger.error("Error processing donation:", {
+				error: (error as Error).message,
+			});
+			res.status(400).json({ error: "Invalid donation data" });
+		}
+	}
+
+	private generateDonationParameters(eventType: string, amount: number) {
+		switch (eventType) {
+			case "BOOST":
+				return {
+					boostPercent: 50,
+					durationSeconds: 600,
+				};
+			case "HEAL":
+				return {
+					healAmount: Math.min(25, amount * 5),
+				};
+			case "SPAWN_ENEMY":
+				return {
+					enemyType: (amount >= 3 ? "ORC" : "GOBLIN") as "ORC" | "GOBLIN",
+				};
+			case "SPAWN_DRAGON":
+				return {
+					enemyType: "DRAGON" as const,
+				};
+			default:
+				return {};
 		}
 	}
 

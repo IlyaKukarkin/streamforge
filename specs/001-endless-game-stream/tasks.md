@@ -114,18 +114,50 @@ description: "Task list for endless game stream MVP implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T036 [P] [US2] Implement donation event handler in backend/src/donation-handler.ts (parse donation events, route to game via WebSocket)
-- [ ] T037 [P] [US2] Create donation event processor in backend/src/event-processor.ts (apply BOOST event to game state, handle rate-limiting/cooldowns)
-- [ ] T038 [P] [US2] Implement boost effect system in game/scripts/boost-manager.gd (apply attack boost, track expiry time, remove on timeout)
-- [ ] T039 [US2] Integrate boost into knight combat in game/scripts/combat.gd (use boosted attack value when calculating damage)
-- [ ] T040 [P] [US2] Create boost timer UI in game/scenes/ui/BoostTimer.tscn and game/scripts/ui/boost-timer.gd (show "BOOST ACTIVE: XX seconds remaining")
-- [ ] T041 [US2] Implement backend donation event reception in backend/src/websocket.ts (listen for donation.received on admin channel or HTTP)
-- [ ] T042 [P] [US2] Create donation alert overlay in backend/overlays/donation-alert.html (display "User donated $X to BOOST!" with animation)
-- [ ] T043 [US2] Implement overlay update on donation in backend/src/overlay-sync.ts (send overlay.donation_alert event when boost applied)
-- [ ] T044 [US2] Create demo boost donation in backend/scripts/donate-simulator.ts (simulate BOOST event with amount 5 USD, 50% boost, 600s duration)
-- [ ] T045 [US2] Test P2 user story: Simulate boost donation, verify attack increases, timer displays, boost expires, overlay alerts
+- [x] T036 [P] [US2] Implement donation event handler in backend/src/donation-handler.ts (parse donation events, route to game via WebSocket)
+- [x] T037 [P] [US2] Create donation event processor in backend/src/event-processor.ts (apply BOOST event to game state, handle rate-limiting/cooldowns)
+- [x] T038 [P] [US2] Implement boost effect system in game/scripts/boost-manager.gd (apply attack boost, track expiry time, remove on timeout)
+- [x] T039 [US2] Integrate boost into knight combat in game/scripts/combat.gd (use boosted attack value when calculating damage)
+- [x] T040 [P] [US2] Create boost timer UI in game/scenes/ui/BoostTimer.tscn and game/scripts/ui/boost-timer.gd (show "BOOST ACTIVE: XX seconds remaining")
+- [x] T041 [US2] Implement backend donation event reception in backend/src/websocket-server.ts (listen for donation.received on admin channel or HTTP)
+- [x] T042 [P] [US2] Create donation alert overlay in backend/overlays/donation-alert.html (display "User donated $X to BOOST!" with animation)
+- [x] T043 [US2] Implement overlay update on donation in backend/src/overlay-sync.ts (send overlay.donation_alert event when boost applied)
+- [x] T044 [US2] Create demo boost donation in backend/scripts/donate-simulator.ts (simulate BOOST event with amount 5 USD, 50% boost, 600s duration)
+- [x] T045 [US2] Test P2 user story: Simulate boost donation, verify attack increases, timer displays, boost expires, overlay alerts
 
 **Checkpoint**: User Stories 1 AND 2 should both work independently
+
+### Testing Instructions for Phase 4
+
+**Prerequisites**: 
+1. Backend server running (`bun run dev` in backend/)
+2. Game running in Godot (with BoostTimer UI integrated into main scene)
+3. Donation alert overlay open in browser (`backend/overlays/donation-alert.html`)
+
+**Test Commands**:
+```bash
+# Test basic boost donation
+cd backend
+bun run scripts/donate-simulator.ts boost
+
+# Test custom amount and viewer
+bun run scripts/donate-simulator.ts boost 7.50 "TestViewer"
+
+# Test multiple donation types
+bun run scripts/donate-simulator.ts heal 2.00
+bun run scripts/donate-simulator.ts enemy 3.00
+bun run scripts/donate-simulator.ts dragon 10.00
+
+# Test donation spree
+bun run scripts/donate-simulator.ts spree 5 3000
+```
+
+**Expected Results**:
+- Donation alert appears in overlay with animation
+- Knight attack increases (check combat damage numbers)
+- Boost timer appears in game UI showing countdown
+- Boost expires after 10 minutes, attack returns to normal
+- WebSocket messages logged in backend console
 
 ---
 

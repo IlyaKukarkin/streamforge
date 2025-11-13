@@ -57,6 +57,10 @@ export class GameWebSocketServer {
 		this.messageHandlers.set("stats_update", this.handleStatsUpdate.bind(this));
 		this.messageHandlers.set("ping", this.handlePing.bind(this));
 		this.messageHandlers.set("client_info", this.handleClientInfo.bind(this));
+		this.messageHandlers.set(
+			"donation_received",
+			this.handleDonationReceived.bind(this),
+		);
 	}
 
 	private setupEventListeners(): void {
@@ -202,6 +206,28 @@ export class GameWebSocketServer {
 		if (client) {
 			client.clientType = clientInfo.type;
 			logger.info(`Client ${clientId} identified as: ${clientInfo.type}`);
+		}
+	}
+
+	private handleDonationReceived(
+		clientId: string,
+		_ws: WebSocket,
+		message: WebSocketMessage,
+	): void {
+		try {
+			const donationData = message.data as DonationEvent;
+
+			logger.info(`Donation received from ${clientId}:`, {
+				donationId: donationData.donationId,
+				viewerName: donationData.viewerName,
+				amount: donationData.amount,
+				eventType: donationData.eventType,
+			});
+
+			// Broadcast the donation to all connected clients (including the game)
+			this.broadcastDonation(donationData);
+		} catch (error) {
+			logger.error(`Error handling donation from ${clientId}:`, { error });
 		}
 	}
 
@@ -409,6 +435,27 @@ export class GameWebSocketServer {
 		this.connectedClients.delete(clientId);
 		logger.info(`Force disconnected client: ${clientId}`);
 		return true;
+	}
+
+	// Public API for external donation events
+	public receiveDonationEvent(donationData: DonationEvent): void {
+		logger.info("External donation event received:", {
+			donationId: donationData.donationId,
+			viewerName: donationData.viewerName,
+			amount: donationData.amount,
+			eventType: donationData.eventType,
+		});
+
+		// Broadcast the donation to all connected clients
+		this.broadcastDonation(donationData);
+	}
+
+	// Public API for broadcasting messages
+	public broadcastMessage(
+		message: WebSocketMessage,
+		options: { excludeType?: string } = {},
+	): void {
+		this.broadcast(message, options);
 	}
 
 	public async shutdown(): Promise<void> {

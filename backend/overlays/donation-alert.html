@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamForge - Donation Alert</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .overlay-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .donation-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            border-radius: 20px;
+            padding: 30px 40px;
+            border: 3px solid #fff;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            min-width: 400px;
+            max-width: 600px;
+            opacity: 0;
+            z-index: 1000;
+        }
+        
+        .donation-alert.show {
+            animation: alertShow 3.5s ease-in-out forwards;
+        }
+        
+        @keyframes alertShow {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+                opacity: 0;
+            }
+            15% {
+                transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
+                opacity: 1;
+            }
+            30% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            85% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0) rotate(10deg);
+                opacity: 0;
+            }
+        }
+        
+        .donation-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); }
+            50% { text-shadow: 2px 2px 20px rgba(255, 255, 255, 0.8); }
+        }
+        
+        .donor-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff200;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+        }
+        
+        .donation-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff00;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
+        }
+        
+        .boost-info {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .boost-details {
+            font-size: 16px;
+            color: #ffcc00;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .sparkles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Sound wave animation */
+        .sound-waves {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 3px;
+        }
+        
+        .wave {
+            width: 4px;
+            height: 20px;
+            background: #fff;
+            border-radius: 2px;
+            animation: waveAnimation 1s ease-in-out infinite;
+        }
+        
+        .wave:nth-child(1) { animation-delay: 0s; }
+        .wave:nth-child(2) { animation-delay: 0.1s; }
+        .wave:nth-child(3) { animation-delay: 0.2s; }
+        .wave:nth-child(4) { animation-delay: 0.3s; }
+        .wave:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes waveAnimation {
+            0%, 100% { height: 20px; }
+            50% { height: 35px; }
+        }
+        
+        /* Hidden by default */
+        .hidden {
+            display: none;
+        }
+        
+        /* Debug info */
+        .debug-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <!-- Donation Alert -->
+        <div id="donationAlert" class="donation-alert hidden">
+            <div class="sparkles" id="sparkles"></div>
+            
+            <div class="sound-waves">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+            
+            <div class="donation-title">🎉 DONATION BOOST! 🎉</div>
+            <div class="donor-name" id="donorName">Anonymous</div>
+            <div class="donation-amount" id="donationAmount">$0.00</div>
+            <div class="boost-info" id="boostInfo">Knight Attack Boosted!</div>
+            <div class="boost-details" id="boostDetails">+50% damage for 10 minutes</div>
+        </div>
+        
+        <!-- Debug Info -->
+        <div class="debug-info" id="debugInfo">
+            Donation Alert Overlay - Ready
+        </div>
+    </div>
+
+    <script>
+        class DonationAlertOverlay {
+            constructor() {
+                this.ws = null;
+                this.alertElement = document.getElementById('donationAlert');
+                this.donorNameElement = document.getElementById('donorName');
+                this.donationAmountElement = document.getElementById('donationAmount');
+                this.boostInfoElement = document.getElementById('boostInfo');
+                this.boostDetailsElement = document.getElementById('boostDetails');
+                this.debugElement = document.getElementById('debugInfo');
+                this.sparklesContainer = document.getElementById('sparkles');
+                
+                this.isAlertVisible = false;
+                this.alertQueue = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.log('Initializing donation alert overlay...');
+                this.connectWebSocket();
+                this.createSparkles();
+                
+                // Test button for development (remove in production)
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'T' || e.key === 't') {
+                        this.showTestAlert();
+                    }
+                });
+            }
+            
+            connectWebSocket() {
+                const wsUrl = 'ws://localhost:3001';
+                this.log(`Connecting to WebSocket: ${wsUrl}`);
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.log('WebSocket connected');
+                    // Identify as overlay client
+                    this.ws.send(JSON.stringify({
+                        type: 'client_info',
+                        data: {
+                            type: 'overlay',
+                            version: '1.0.0'
+                        }
+                    }));
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        this.handleWebSocketMessage(message);
+                    } catch (error) {
+                        this.log('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    this.log('WebSocket disconnected, attempting reconnect...');
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
+                
+                this.ws.onerror = (error) => {
+                    this.log('WebSocket error:', error);
+                };
+            }
+            
+            handleWebSocketMessage(message) {
+                switch (message.type) {
+                    case 'donation_event':
+                        this.handleDonationEvent(message.data);
+                        break;
+                    case 'overlay_update':
+                        if (message.data.type === 'donation_alert') {
+                            this.handleDonationEvent(message.data.donation);
+                        }
+                        break;
+                    default:
+                        // Ignore other message types
+                        break;
+                }
+            }
+            
+            handleDonationEvent(donationData) {
+                this.log('Received donation event:', donationData);
+                
+                // Add to queue if alert is currently visible
+                if (this.isAlertVisible) {
+                    this.alertQueue.push(donationData);
+                    return;
+                }
+                
+                this.showDonationAlert(donationData);
+            }
+            
+            showDonationAlert(donationData) {
+                this.log('Showing donation alert:', donationData);
+                
+                // Update alert content
+                this.donorNameElement.textContent = donationData.viewerName || 'Anonymous';
+                this.donationAmountElement.textContent = `$${donationData.amount.toFixed(2)}`;
+                
+                // Update boost info based on event type
+                this.updateBoostInfo(donationData);
+                
+                // Show the alert
+                this.alertElement.classList.remove('hidden');
+                this.alertElement.classList.add('show');
+                this.isAlertVisible = true;
+                
+                // Hide after animation completes
+                setTimeout(() => {
+                    this.hideAlert();
+                }, 3500);
+            }
+            
+            updateBoostInfo(donationData) {
+                const eventType = donationData.eventType || 'BOOST';
+                const parameters = donationData.parameters || {};
+                
+                switch (eventType) {
+                    case 'BOOST': {
+                        const boostPercent = parameters.boostPercent || 50;
+                        const durationSeconds = parameters.durationSeconds || 600;
+                        const minutes = Math.floor(durationSeconds / 60);
+                        
+                        this.boostInfoElement.textContent = 'Knight Attack Boosted!';
+                        this.boostDetailsElement.textContent = `+${boostPercent}% damage for ${minutes} minutes`;
+                        break;
+                    }
+                        
+                    case 'HEAL': {
+                        const healAmount = parameters.healAmount || 25;
+                        this.boostInfoElement.textContent = 'Knight Healed!';
+                        this.boostDetailsElement.textContent = `+${healAmount} health restored`;
+                        break;
+                    }
+                        
+                    case 'SPAWN_ENEMY': {
+                        const enemyType = parameters.enemyType || 'GOBLIN';
+                        this.boostInfoElement.textContent = 'Enemy Spawned!';
+                        this.boostDetailsElement.textContent = `${enemyType} appears to challenge the knight!`;
+                        break;
+                    }
+                        
+                    case 'SPAWN_DRAGON':
+                        this.boostInfoElement.textContent = 'DRAGON SPAWNED!';
+                        this.boostDetailsElement.textContent = 'A mighty dragon challenges the knight!';
+                        break;
+                        
+                    default:
+                        this.boostInfoElement.textContent = 'Donation Received!';
+                        this.boostDetailsElement.textContent = 'Thank you for your support!';
+                        break;
+                }
+            }
+            
+            hideAlert() {
+                this.alertElement.classList.remove('show');
+                this.isAlertVisible = false;
+                
+                setTimeout(() => {
+                    this.alertElement.classList.add('hidden');
+                    
+                    // Process next alert in queue
+                    if (this.alertQueue.length > 0) {
+                        const nextAlert = this.alertQueue.shift();
+                        setTimeout(() => this.showDonationAlert(nextAlert), 500);
+                    }
+                }, 100);
+            }
+            
+            createSparkles() {
+                for (let i = 0; i < 20; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.style.left = Math.random() * 100 + '%';
+                    sparkle.style.top = Math.random() * 100 + '%';
+                    sparkle.style.animationDelay = Math.random() * 2 + 's';
+                    this.sparklesContainer.appendChild(sparkle);
+                }
+            }
+            
+            showTestAlert() {
+                const testDonation = {
+                    donationId: 'test_' + Date.now(),
+                    viewerName: 'TestViewer',
+                    amount: 5.00,
+                    eventType: 'BOOST',
+                    parameters: {
+                        boostPercent: 50,
+                        durationSeconds: 600
+                    }
+                };
+                
+                this.handleDonationEvent(testDonation);
+            }
+            
+            log(message, ...args) {
+                const timestamp = new Date().toLocaleTimeString();
+                console.log(`[${timestamp}] DonationAlert:`, message, ...args);
+                
+                // Update debug info
+                if (this.debugElement) {
+                    this.debugElement.textContent = `${timestamp}: ${message}`;
+                }
+            }
+        }
+        
+        // Initialize overlay when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DonationAlertOverlay();
+        });
+    </script>
+</body>
+</html>
