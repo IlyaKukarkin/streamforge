@@ -1,11 +1,14 @@
 // WebSocket server for real-time communication with Godot game
+
+import type { IncomingMessage } from "http";
 import WebSocket, { WebSocketServer } from "ws";
-import type { DonationQueue } from "./donation-queue.js";
 import type { GameStateManager } from "./game-state.js";
 import { logger } from "./services/logger.js";
 import type {
 	Config,
 	ConnectionState,
+	DonationEvent,
+	GameState,
 	GameStateUpdate,
 	StatsUpdate,
 	WebSocketMessage,
@@ -15,18 +18,17 @@ export class GameWebSocketServer {
 	private server: WebSocketServer;
 	private config: Config;
 	private gameStateManager: GameStateManager;
+	// private donationQueue: DonationQueue; // Removed unused property
 	private connectedClients: Map<string, ConnectionState> = new Map();
 	private socketToClient: Map<WebSocket, string> = new Map(); // Map sockets to client IDs
-	private messageHandlers: Map<string, Function> = new Map();
+	private messageHandlers: Map<
+		string,
+		(clientId: string, ws: WebSocket, message: WebSocketMessage) => void
+	> = new Map();
 
-	constructor(
-		config: Config,
-		gameStateManager: GameStateManager,
-		donationQueue: DonationQueue,
-	) {
+	constructor(config: Config, gameStateManager: GameStateManager) {
 		this.config = config;
 		this.gameStateManager = gameStateManager;
-		this.donationQueue = donationQueue;
 
 		// Initialize WebSocket server
 		this.server = new WebSocketServer({
@@ -36,6 +38,11 @@ export class GameWebSocketServer {
 
 		this.setupMessageHandlers();
 		this.setupEventListeners();
+
+		// Subscribe to game state changes using observer pattern
+		this.gameStateManager.subscribe((gameState) => {
+			this.broadcastGameState(gameState);
+		});
 
 		logger.info(
 			`WebSocket server initialized on port ${config.websocket.port}`,
@@ -55,16 +62,12 @@ export class GameWebSocketServer {
 	private setupEventListeners(): void {
 		this.server.on("connection", this.handleConnection.bind(this));
 		this.server.on("error", this.handleServerError.bind(this));
-
-		// Listen for game state changes
-		this.gameStateManager.subscribe((gameState) => {
-			this.broadcastGameState(gameState);
-		});
 	}
 
-	private handleConnection(ws: WebSocket, request: any): void {
+	private handleConnection(ws: WebSocket, request: IncomingMessage): void {
 		const clientId = this.generateClientId();
-		const clientIP = request.socket.remoteAddress || "unknown";
+		const clientIP =
+			(request as IncomingMessage)?.socket?.remoteAddress || "unknown";
 
 		logger.info(`New WebSocket connection: ${clientId} from ${clientIP}`);
 
@@ -136,7 +139,7 @@ export class GameWebSocketServer {
 				this.sendError(ws, `Unknown message type: ${message.type}`);
 			}
 		} catch (error) {
-			logger.error(`Error parsing message from ${clientId}:`, error);
+			logger.error(`Error parsing message from ${clientId}:`, { error });
 			this.sendError(ws, "Invalid message format");
 		}
 	}
@@ -150,9 +153,11 @@ export class GameWebSocketServer {
 			const update = message.data as GameStateUpdate;
 			this.gameStateManager.updateFromGame(update);
 
-			logger.debug(`Game state updated by ${clientId}:`, update);
+			logger.debug(`Game state updated by ${clientId}:`, { update });
 		} catch (error) {
-			logger.error(`Error handling game state update from ${clientId}:`, error);
+			logger.error(`Error handling game state update from ${clientId}:`, {
+				error,
+			});
 			this.sendError(ws, "Failed to update game state");
 		}
 	}
@@ -169,18 +174,14 @@ export class GameWebSocketServer {
 				score: stats.score,
 			});
 
-			logger.debug(`Stats updated by ${clientId}:`, stats);
+			logger.debug(`Stats updated by ${clientId}:`, { stats });
 		} catch (error) {
-			logger.error(`Error handling stats update from ${clientId}:`, error);
+			logger.error(`Error handling stats update from ${clientId}:`, { error });
 			this.sendError(ws, "Failed to update stats");
 		}
 	}
 
-	private handlePing(
-		clientId: string,
-		ws: WebSocket,
-		_message: WebSocketMessage,
-	): void {
+	private handlePing(clientId: string, ws: WebSocket): void {
 		this.sendMessage(ws, {
 			type: "pong",
 			data: {
@@ -192,7 +193,7 @@ export class GameWebSocketServer {
 
 	private handleClientInfo(
 		clientId: string,
-		_ws: WebSocket,
+		ws: WebSocket,
 		message: WebSocketMessage,
 	): void {
 		const clientInfo = message.data as { type: string; version?: string };
@@ -222,16 +223,16 @@ export class GameWebSocketServer {
 	}
 
 	private handleClientError(clientId: string, error: Error): void {
-		logger.error(`WebSocket error for client ${clientId}:`, error);
+		logger.error(`WebSocket error for client ${clientId}:`, { error });
 		this.connectedClients.delete(clientId);
 	}
 
 	private handleServerError(error: Error): void {
-		logger.error("WebSocket server error:", error);
+		logger.error("WebSocket server error:", { error });
 	}
 
 	// Broadcasting methods
-	public broadcastDonation(donation: any): void {
+	public broadcastDonation(donation: DonationEvent): void {
 		const message: WebSocketMessage = {
 			type: "donation_event",
 			data: donation,
@@ -241,11 +242,11 @@ export class GameWebSocketServer {
 		logger.info(`Broadcasted donation event:`, {
 			eventType: donation.eventType,
 			amount: donation.amount,
-			username: donation.username,
+			viewerName: donation.viewerName,
 		});
 	}
 
-	public broadcastGameState(gameState: any): void {
+	public broadcastGameState(gameState: GameState): void {
 		const message: WebSocketMessage = {
 			type: "game_state_broadcast",
 			data: gameState,
@@ -263,7 +264,7 @@ export class GameWebSocketServer {
 		const deadClients: string[] = [];
 
 		this.server.clients.forEach((ws) => {
-			const clientId = this.findClientIdBySocket(ws);
+			const clientId = this.socketToClient.get(ws);
 			const client = clientId ? this.connectedClients.get(clientId) : null;
 
 			// Skip if client type should be excluded
@@ -275,7 +276,9 @@ export class GameWebSocketServer {
 				try {
 					ws.send(messageStr);
 				} catch (error) {
-					logger.error(`Error sending message to client ${clientId}:`, error);
+					logger.error(`Error sending message to client ${clientId}:`, {
+						error,
+					});
 					if (clientId) deadClients.push(clientId);
 				}
 			} else {
@@ -302,7 +305,7 @@ export class GameWebSocketServer {
 			try {
 				ws.send(JSON.stringify(message));
 			} catch (error) {
-				logger.error("Error sending message to client:", error);
+				logger.error("Error sending message to client:", { error });
 			}
 		}
 	}
@@ -340,7 +343,9 @@ export class GameWebSocketServer {
 		}, this.config.websocket.pingInterval || 30000);
 
 		// Store interval reference for cleanup
-		(this as any).healthCheckInterval = interval;
+		(
+			this as unknown as { healthCheckInterval: NodeJS.Timeout }
+		).healthCheckInterval = interval;
 	}
 
 	private performHealthCheck(): void {
@@ -367,7 +372,7 @@ export class GameWebSocketServer {
 				try {
 					ws.ping();
 				} catch (error) {
-					logger.error("Error sending ping:", error);
+					logger.error("Error sending ping:", { error });
 				}
 			}
 		});
@@ -410,8 +415,9 @@ export class GameWebSocketServer {
 		logger.info("Shutting down WebSocket server...");
 
 		// Clear health check interval
-		if ((this as any).healthCheckInterval) {
-			clearInterval((this as any).healthCheckInterval);
+		const self = this as unknown as { healthCheckInterval?: NodeJS.Timeout };
+		if (self.healthCheckInterval) {
+			clearInterval(self.healthCheckInterval);
 		}
 
 		// Close all client connections
