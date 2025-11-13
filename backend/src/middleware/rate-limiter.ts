@@ -162,13 +162,14 @@ export class RateLimiter {
 	 * Update user rate limit counter
 	 */
 	private updateUserCounter(userId: string, now: number): void {
-		const { count, ...rest } = this.getUserState(userId, now);
-
-		this.userStates.set(userId, {
-			...rest,
-			lastRequest: now,
-			count: count + 1,
-		});
+		const userState = this.getUserState(userId, now);
+		
+		// Update counter and timestamp
+		userState.count++;
+		userState.lastRequest = now;
+		
+		// Save back to map
+		this.userStates.set(userId, userState);
 	}
 
 	/**
@@ -208,6 +209,15 @@ export class RateLimiter {
 			if (now - state.lastRequest > maxAge) {
 				this.userStates.delete(userId);
 			}
+		}
+	}
+
+	/**
+	 * Cleanup resources (call on shutdown)
+	 */
+	dispose(): void {
+		if (this.cleanupInterval) {
+			clearInterval(this.cleanupInterval);
 		}
 	}
 }

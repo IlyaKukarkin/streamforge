@@ -9,13 +9,34 @@ Auto-generated from all feature plans. Last updated: 2025-11-11
 ## Project Structure
 
 ```text
-src/
-tests/
+backend/          # Bun + TypeScript backend
+  src/
+  tests/
+game/             # Godot 4 game client
+  scripts/
+  scenes/
+specs/            # Feature specifications
+  001-endless-game-stream/
+.specify/         # Specification templates and tooling
+docs/             # Project documentation
 ```
 
 ## Commands
 
-bun test; bun run lint
+```bash
+# Development environment (Windows)
+dev.bat                    # Launch PowerShell development scripts
+
+# Backend commands
+cd backend
+bun install               # Install dependencies
+bun run dev              # Start development server
+bun test                 # Run tests
+bun run lint             # Lint code
+
+# Root-level commands (if available)
+make help                # Show available Makefile targets
+```
 
 ## Development Environment
 
