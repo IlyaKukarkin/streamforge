@@ -346,7 +346,7 @@ func _send_game_stats():
 	}
 	
 	websocket_client.send_message(stats)
-	game_stats_updated.emit(stats.data)
+	game_stats_updated.emit(stats["data"])
 
 # Public API for external systems
 func get_current_stats() -> Dictionary:

@@ -27,5 +27,4 @@ offset_bottom = -30.0
 max_value = 100.0
 value = 100.0
 show_percentage = false
-
-[node name="HealthBarFill" type="StyleBoxFlat" parent="HealthBar"]
+theme_override_styles/fill = SubResource("StyleBoxFlat_3z8l6")
