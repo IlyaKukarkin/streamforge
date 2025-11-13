@@ -15,7 +15,6 @@ export class GameWebSocketServer {
 	private server: WebSocketServer;
 	private config: Config;
 	private gameStateManager: GameStateManager;
-	private donationQueue: DonationQueue;
 	private connectedClients: Map<string, ConnectionState> = new Map();
 	private socketToClient: Map<WebSocket, string> = new Map(); // Map sockets to client IDs
 	private messageHandlers: Map<string, Function> = new Map();
@@ -180,7 +179,7 @@ export class GameWebSocketServer {
 	private handlePing(
 		clientId: string,
 		ws: WebSocket,
-		message: WebSocketMessage,
+		_message: WebSocketMessage,
 	): void {
 		this.sendMessage(ws, {
 			type: "pong",
@@ -193,7 +192,7 @@ export class GameWebSocketServer {
 
 	private handleClientInfo(
 		clientId: string,
-		ws: WebSocket,
+		_ws: WebSocket,
 		message: WebSocketMessage,
 	): void {
 		const clientInfo = message.data as { type: string; version?: string };

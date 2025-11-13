@@ -217,14 +217,13 @@ export class Logger {
 	 */
 	private async writeToFile(entry: LogEntry): Promise<void> {
 		try {
-			const logLine =
-				JSON.stringify({
-					timestamp: new Date(entry.timestamp).toISOString(),
-					level: entry.level,
-					message: entry.message,
-					context: entry.context,
-					meta: entry.meta,
-				}) + "\n";
+			const logLine = `${JSON.stringify({
+				timestamp: new Date(entry.timestamp).toISOString(),
+				level: entry.level,
+				message: entry.message,
+				context: entry.context,
+				meta: entry.meta,
+			})}\n`;
 
 			// Ensure log directory exists
 			const logPath = this.config.logFile;
@@ -233,7 +232,7 @@ export class Logger {
 			if (logDir) {
 				try {
 					await mkdir(logDir, { recursive: true });
-				} catch (error) {
+				} catch (_error) {
 					// Directory might already exist, ignore error
 				}
 			}

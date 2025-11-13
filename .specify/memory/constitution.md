@@ -101,7 +101,7 @@ All work flows through pull requests with these quality gates:
 The constitution is the guiding document for development practices. Amendments and governance rules:
 - Amendments: Changes to this constitution are made via a documented PR. The PR MUST include: the proposed text, rationale, and a migration or compliance plan for affected artifacts.
 - Approval: Amendments require at least two approvers from the maintainers group and passing CI. For major governance changes, a public announcement (changelog/meeting note) is required.
-- Versioning policy: We use semantic versioning for the constitution itself — MAJOR for incompatible governance changes, MINOR for adding or expanding principles, PATCH for clarifications and non-semantic edits. The current amendment increments the constitution to 1.0.0.
+- Versioning policy: We use semantic versioning for the constitution itself — MAJOR for incompatible governance changes, MINOR for adding or expanding principles, PATCH for clarifications and non-semantic edits. The current amendment increments the constitution to 2.2.0.
 - Compliance reviews: Periodic reviews (at least annually) SHOULD be scheduled to ensure the constitution remains fit for purpose.
 
 **Version**: 2.2.0 | **Ratified**: 2025-11-11 | **Last Amended**: 2025-11-12

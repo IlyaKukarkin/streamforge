@@ -17,6 +17,7 @@ var active_enemies: Array[Node2D] = []
 var spawn_timer: float = 0.0
 var current_spawn_interval: float
 var wave_number: int = 1
+var wave_in_progress: bool = false
 
 # Screen boundaries (assuming 1280x720)
 var screen_width: float = 1280.0
@@ -60,7 +61,7 @@ func _process(delta):
 	cleanup_defeated_enemies()
 	
 	# Check for wave completion
-	if active_enemies.is_empty() and wave_number > 1:
+	if wave_in_progress and active_enemies.is_empty():
 		complete_wave()
 
 func should_spawn_enemy() -> bool:
@@ -97,6 +98,7 @@ func spawn_enemy(enemy_type: String = "goblin") -> Node2D:
 	# Add to scene and track
 	get_parent().add_child(enemy)
 	active_enemies.append(enemy)
+	wave_in_progress = true  # Mark wave as active when enemies are spawned
 	
 	# Connect enemy signals
 	if enemy.has_signal("enemy_defeated"):
@@ -251,6 +253,7 @@ func complete_wave() -> void:
 	wave_completed.emit(wave_number)
 	
 	wave_number += 1
+	wave_in_progress = false  # Reset wave flag
 	
 	# Adjust spawn rate for next wave (spawn faster)
 	current_spawn_interval = max(1.0, base_spawn_interval - (wave_number - 1) * 0.2)

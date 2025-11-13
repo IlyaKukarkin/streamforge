@@ -7,13 +7,15 @@ import type { Config } from "./types/index.js";
 export function loadConfig(): Config {
 	// Load .env file
 	dotenv.config();
-	
+
 	const websocketPort = parseInt(process.env.WEBSOCKET_PORT ?? "3001", 10);
 	const rawLogLevel = process.env.LOG_LEVEL ?? "info";
-	const logLevel = (["debug", "info", "warn", "error"].includes(rawLogLevel)
-		? rawLogLevel
-		: "info") as Config["logLevel"];
-	
+	const logLevel = (
+		["debug", "info", "warn", "error"].includes(rawLogLevel)
+			? rawLogLevel
+			: "info"
+	) as Config["logLevel"];
+
 	const config: Config = {
 		port: parseInt(process.env.PORT ?? "3000", 10),
 		websocketPort: websocketPort,

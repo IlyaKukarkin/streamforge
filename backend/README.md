@@ -45,13 +45,12 @@ pm2 start pm2.config.js
 
 ## 📡 API Reference
 
-### Admin Endpoints
+### Health Check
 
-All admin endpoints require `Authorization: Bearer {ADMIN_API_KEY}` header.
+This endpoint does NOT require authentication.
 
-#### Health Check
 ```http
-GET /admin/health
+GET /health
 ```
 
 Response:
@@ -62,6 +61,10 @@ Response:
   "timestamp": "2025-11-12T12:34:56Z"
 }
 ```
+
+### Admin Endpoints
+
+All admin endpoints under `/api/*` require `Authorization: Bearer {ADMIN_API_KEY}` header.
 
 #### Game Statistics
 ```http

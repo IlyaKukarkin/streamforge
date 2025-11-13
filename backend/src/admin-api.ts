@@ -46,7 +46,7 @@ export class AdminApiServer {
 		this.app.use("/api", this.authenticateApiKey.bind(this));
 
 		// Request logging
-		this.app.use((req: Request, res: Response, next: NextFunction) => {
+		this.app.use((req: Request, _res: Response, next: NextFunction) => {
 			logger.info(`${req.method} ${req.path}`, { ip: req.ip });
 			next();
 		});
@@ -57,14 +57,14 @@ export class AdminApiServer {
 		res: Response,
 		next: NextFunction,
 	): void {
-		const apiKey = req.headers["x-api-key"] || req.query["api_key"];
+		const apiKey = req.headers["x-api-key"] || req.query.api_key;
 
 		if (apiKey !== this.config.adminApiKey) {
 			logger.warn("Unauthorized API access attempt", {
 				ip: req.ip,
 				path: req.path,
 				providedKey:
-					typeof apiKey === "string" ? apiKey.substring(0, 8) + "..." : "none",
+					typeof apiKey === "string" ? `${apiKey.substring(0, 8)}...` : "none",
 			});
 			res.status(401).json({ error: "Invalid API key" });
 			return;
@@ -107,7 +107,7 @@ export class AdminApiServer {
 	}
 
 	// Route handlers
-	private handleHealthCheck(req: Request, res: Response): void {
+	private handleHealthCheck(_req: Request, res: Response): void {
 		res.json({
 			status: "healthy",
 			timestamp: Date.now(),
@@ -115,7 +115,7 @@ export class AdminApiServer {
 		});
 	}
 
-	private handleGetStatus(req: Request, res: Response): void {
+	private handleGetStatus(_req: Request, res: Response): void {
 		try {
 			const gameState = this.dependencies.gameStateManager.getState();
 			const queueStats = this.dependencies.donationQueue.getStats();
@@ -134,7 +134,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleGetGameState(req: Request, res: Response): void {
+	private handleGetGameState(_req: Request, res: Response): void {
 		try {
 			const gameState = this.dependencies.gameStateManager.getState();
 			res.json(gameState);
@@ -158,7 +158,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleResetGame(req: Request, res: Response): void {
+	private handleResetGame(_req: Request, res: Response): void {
 		try {
 			this.dependencies.gameStateManager.resetGame();
 			this.dependencies.donationQueue.clear();
@@ -176,7 +176,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleGetDonationQueue(req: Request, res: Response): void {
+	private handleGetDonationQueue(_req: Request, res: Response): void {
 		try {
 			const queueData = this.dependencies.donationQueue.getAll();
 			res.json(queueData);
@@ -220,7 +220,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleClearDonationQueue(req: Request, res: Response): void {
+	private handleClearDonationQueue(_req: Request, res: Response): void {
 		try {
 			this.dependencies.donationQueue.clear();
 
@@ -232,7 +232,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleGetRateLimits(req: Request, res: Response): void {
+	private handleGetRateLimits(_req: Request, res: Response): void {
 		try {
 			const rateLimitStats = this.dependencies.rateLimiter.getStatus();
 			res.json(rateLimitStats);
@@ -242,7 +242,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleResetRateLimits(req: Request, res: Response): void {
+	private handleResetRateLimits(_req: Request, res: Response): void {
 		try {
 			this.dependencies.rateLimiter.reset();
 
@@ -254,7 +254,7 @@ export class AdminApiServer {
 		}
 	}
 
-	private handleGetOverlay(req: Request, res: Response): void {
+	private handleGetOverlay(_req: Request, res: Response): void {
 		try {
 			// Serve HTML overlay for OBS
 			const overlayHtml = this.generateOverlayHtml();
@@ -420,9 +420,9 @@ export class AdminApiServer {
 
 	private handleError(
 		error: Error,
-		req: Request,
+		_req: Request,
 		res: Response,
-		next: NextFunction,
+		_next: NextFunction,
 	): void {
 		logger.error("API error:", error);
 

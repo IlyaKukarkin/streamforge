@@ -162,13 +162,14 @@ export class RateLimiter {
 	 * Update user rate limit counter
 	 */
 	private updateUserCounter(userId: string, now: number): void {
-		const { count, ...rest } = this.getUserState(userId, now);
+		const userState = this.getUserState(userId, now);
 
-		this.userStates.set(userId, {
-			...rest,
-			lastRequest: now,
-			count: count + 1,
-		});
+		// Update counter and timestamp
+		userState.count++;
+		userState.lastRequest = now;
+
+		// Save back to map
+		this.userStates.set(userId, userState);
 	}
 
 	/**

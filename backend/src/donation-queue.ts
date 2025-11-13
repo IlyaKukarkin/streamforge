@@ -1,10 +1,11 @@
 // FIFO donation event queue with rate limiting and cooldown tracking
+
+import { logger } from "./services/logger.js";
 import type {
 	Config,
 	DonationEvent,
 	DonationEventType,
 } from "./types/index.js";
-import { logger } from "./services/logger.js";
 
 interface CooldownState {
 	lastEventTime: number;
