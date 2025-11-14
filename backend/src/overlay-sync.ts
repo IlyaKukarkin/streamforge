@@ -9,6 +9,16 @@ export interface OverlaySync {
 	sendDonationAlert(donation: DonationEvent): void;
 	sendGameStateUpdate(gameState: GameState): void;
 	sendOverlayUpdate(overlayData: OverlayState): void;
+	sendBoostExpiredAlert(boostType: string): void;
+	sendHealthUpdate(health: number, maxHealth: number): void;
+	sendScoreUpdate(score: number, wave: number): void;
+	sendAlert(
+		message: string,
+		type?: string,
+		duration?: number,
+		color?: string,
+	): void;
+	sendCustomMessage(type: string, data: Record<string, unknown>): void;
 }
 
 export class StreamForgeOverlaySync implements OverlaySync {
@@ -37,8 +47,10 @@ export class StreamForgeOverlaySync implements OverlaySync {
 			},
 		});
 
-		// Also send the original donation event for game clients
-		this.webSocketServer.broadcastDonation(donation);
+		// Also send the original donation event for game clients (exclude overlays)
+		this.webSocketServer.broadcastDonation(donation, {
+			excludeType: "overlay",
+		});
 	}
 
 	public sendGameStateUpdate(gameState: GameState): void {
@@ -95,13 +107,24 @@ export class StreamForgeOverlaySync implements OverlaySync {
 	public sendHealthUpdate(health: number, maxHealth: number): void {
 		logger.debug("Sending health update to overlays", { health, maxHealth });
 
+		let healthPercentage = 0;
+		if (
+			typeof maxHealth === "number" &&
+			Number.isFinite(maxHealth) &&
+			maxHealth > 0
+		) {
+			healthPercentage = (health / maxHealth) * 100;
+		}
+		// Clamp to [0, 100]
+		healthPercentage = Math.max(0, Math.min(100, healthPercentage));
+
 		this.webSocketServer.broadcastMessage({
 			type: "overlay_update",
 			data: {
 				type: "health_update",
 				health,
 				maxHealth,
-				healthPercentage: (health / maxHealth) * 100,
+				healthPercentage,
 				timestamp: Date.now(),
 			},
 		});
@@ -184,7 +207,7 @@ export class StreamForgeOverlaySync implements OverlaySync {
 			type: "overlay_update",
 			data: {
 				type: messageType,
-				...data,
+				payload: data,
 				timestamp: Date.now(),
 			},
 		});

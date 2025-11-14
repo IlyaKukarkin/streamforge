@@ -258,13 +258,16 @@ export class GameWebSocketServer {
 	}
 
 	// Broadcasting methods
-	public broadcastDonation(donation: DonationEvent): void {
+	public broadcastDonation(
+		donation: DonationEvent,
+		options: { excludeType?: string } = {},
+	): void {
 		const message: WebSocketMessage = {
 			type: "donation_event",
 			data: donation,
 		};
 
-		this.broadcast(message);
+		this.broadcast(message, options);
 		logger.info(`Broadcasted donation event:`, {
 			eventType: donation.eventType,
 			amount: donation.amount,

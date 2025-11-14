@@ -193,18 +193,18 @@ export class AdminApiServer {
 				username = "TestUser",
 				amount = 5.0,
 				eventType = "BOOST",
-				message = "Test donation",
 			} = req.body;
 
-			// Create test donation
+			// Create test donation (DonationEvent interface)
 			const testDonation = {
 				donationId: `test_${Date.now()}`,
+				viewerId: `test_${Date.now()}`,
 				viewerName: username,
 				amount: Number(amount),
 				eventType,
-				message,
+				status: "PENDING" as const,
 				createdAt: Date.now(),
-				processed: false,
+				parameters: this.generateDonationParameters(eventType, Number(amount)),
 			};
 
 			// Add to queue
@@ -327,7 +327,9 @@ export class AdminApiServer {
 			logger.info("Donation queue cleared via API");
 			res.json({ success: true });
 		} catch (error) {
-			logger.error("Error clearing donation queue:", error as Error);
+			logger.error("Error clearing donation queue:", {
+				error: (error as Error).message,
+			});
 			res.status(500).json({ error: "Internal server error" });
 		}
 	}
@@ -337,7 +339,9 @@ export class AdminApiServer {
 			const rateLimitStats = this.dependencies.rateLimiter.getStatus();
 			res.json(rateLimitStats);
 		} catch (error) {
-			logger.error("Error getting rate limit stats:", error as Error);
+			logger.error("Error getting rate limit stats:", {
+				error: (error as Error).message,
+			});
 			res.status(500).json({ error: "Internal server error" });
 		}
 	}
@@ -349,7 +353,9 @@ export class AdminApiServer {
 			logger.info("Rate limits reset via API");
 			res.json({ success: true });
 		} catch (error) {
-			logger.error("Error resetting rate limits:", error as Error);
+			logger.error("Error resetting rate limits:", {
+				error: (error as Error).message,
+			});
 			res.status(500).json({ error: "Internal server error" });
 		}
 	}
@@ -361,7 +367,9 @@ export class AdminApiServer {
 			res.setHeader("Content-Type", "text/html");
 			res.send(overlayHtml);
 		} catch (error) {
-			logger.error("Error serving overlay:", error as Error);
+			logger.error("Error serving overlay:", {
+				error: (error as Error).message,
+			});
 			res.status(500).json({ error: "Internal server error" });
 		}
 	}
@@ -502,11 +510,11 @@ export class AdminApiServer {
 
         function getEffectDisplayName(eventType) {
             const names = {
-                'speed_boost': 'Speed Boost!',
-                'damage_boost': 'Damage Boost!',
-                'health_boost': 'Health Boost!',
-                'shield': 'Shield Protection!',
-                'enemy_wave': 'Enemy Wave!'
+				'BOOST': 'Speed Boost!',
+				'SPAWN_ENEMY': 'Enemy Wave!',
+				'HEAL': 'Health Boost!',
+				'SPAWN_DRAGON': 'Dragon Summon!',
+				'SHIELD': 'Shield Protection!'
             };
             return names[eventType] || 'Special Effect!';
         }
@@ -524,7 +532,7 @@ export class AdminApiServer {
 		res: Response,
 		_next: NextFunction,
 	): void {
-		logger.error("API error:", error);
+		logger.error("API error:", { error: (error as Error).message });
 
 		if (!res.headersSent) {
 			res.status(500).json({
@@ -543,7 +551,9 @@ export class AdminApiServer {
 				});
 
 				this.server.on("error", (error: Error) => {
-					logger.error("Admin API server error:", error);
+					logger.error("Admin API server error:", {
+						error: (error as Error).message,
+					});
 					reject(error);
 				});
 			} catch (error) {

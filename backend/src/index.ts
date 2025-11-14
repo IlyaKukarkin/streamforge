@@ -353,11 +353,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 		process.exit(1);
 	});
 }
-if (isMainModule) {
-	main().catch((error) => {
-		console.error("Failed to start StreamForge server:", error);
-		process.exit(1);
-	});
-}
 
 export { StreamForgeServer };

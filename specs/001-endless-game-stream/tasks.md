@@ -7,7 +7,7 @@ description: "Task list for endless game stream MVP implementation"
 **Input**: Design documents from `/specs/001-endless-game-stream/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: Testing is OPTIONAL for this prototype. If tests are included, they are marked with test tasks before implementation.
+**Tests**: Testing for this prototype is deferred to the stabilization backlog. All test-related tasks are tagged with [TEST] and detailed in T077 (see below). Implementation tasks do not require tests unless explicitly tagged.
 
 **Organization**: Tasks are grouped by user story (P1, P2, P3) to enable independent implementation and testing of each story.
 
@@ -74,7 +74,7 @@ description: "Task list for endless game stream MVP implementation"
 
 **Goal**: Knight character walks right, defeats enemies, accumulates score; game resets on death.
 
-**Independent Test**: Can be fully tested by running the game and verifying:
+**[TEST] Independent Test**: Can be fully tested by running the game and verifying:
 - Knight moves to the right continuously
 - Score increments as knight progresses (e.g., +10 per enemy defeated)
 - Enemies spawn at intervals (e.g., every 5-10 seconds)
@@ -95,7 +95,7 @@ description: "Task list for endless game stream MVP implementation"
 - [x] T032 [P] [US1] Implement game loop in game/scripts/game-manager.gd (update knight position, enemy positions, combat, score every frame at 60 FPS)
 - [x] T033 [US1] Create backend game state sync in backend/src/game-state-sync.ts (periodically send gamestate.update events to overlays)
 - [x] T034 [P] [US1] Create score overlay in backend/overlays/score.html (display current score, wave, knight health)
-- [x] T035 [US1] Test P1 user story: Run game, verify knight moves, enemies spawn, score increments, game resets on death
+- [x] [TEST] T035 [US1] Test P1 user story: Run game, verify knight moves, enemies spawn, score increments, game resets on death
 
 **Checkpoint**: User Story 1 is fully functional and testable independently
 
@@ -123,7 +123,7 @@ description: "Task list for endless game stream MVP implementation"
 - [x] T042 [P] [US2] Create donation alert overlay in backend/overlays/donation-alert.html (display "User donated $X to BOOST!" with animation)
 - [x] T043 [US2] Implement overlay update on donation in backend/src/overlay-sync.ts (send overlay.donation_alert event when boost applied)
 - [x] T044 [US2] Create demo boost donation in backend/scripts/donate-simulator.ts (simulate BOOST event with amount 5 USD, 50% boost, 600s duration)
-- [x] T045 [US2] Test P2 user story: Simulate boost donation, verify attack increases, timer displays, boost expires, overlay alerts
+- [x] [TEST] T045 [US2] Test P2 user story: Simulate boost donation, verify attack increases, timer displays, boost expires, overlay alerts
 
 **Checkpoint**: User Stories 1 AND 2 should both work independently
 
@@ -165,7 +165,7 @@ bun run scripts/donate-simulator.ts spree 5 3000
 
 **Goal**: Viewers donate to spawn a dragon or special enemy to challenge the knight. Multiple enemies can be active.
 
-**Independent Test**: Can be tested by:
+**[TEST] Independent Test**: Can be tested by:
 - Simulating a SPAWN_DRAGON donation via demo script
 - Verifying dragon appears in-game at spawn location
 - Verifying dragon has high health/attack (DRAGON type: 100 health, 30 attack)
@@ -221,7 +221,7 @@ bun run scripts/donate-simulator.ts spree 5 3000
 - [ ] T074 Create demo scenario walkthrough in docs/DEMO.md (step-by-step instructions to run local demo with donation simulator)
 - [ ] T075 [P] Add code comments to all backend src files explaining functions, parameters, return types
 - [ ] T076 [P] Add code comments to all game scripts (.gd files) with function purposes and logic
-- [ ] T077 Create TESTING_BACKLOG.md documenting tests to add during stabilization:
+- [ ] [TEST] T077 Create TESTING_BACKLOG.md documenting tests to add during stabilization:
   -  Unit tests: combat logic, rate-limiting, state transitions
   -  Integration tests: donation flow end-to-end, WebSocket communication
   -  Load tests: concurrent donations, scalability limits
@@ -229,8 +229,8 @@ bun run scripts/donate-simulator.ts spree 5 3000
 - [ ] T078 Create VERSIONING.md defining semantic versioning for APIs and releases
 - [ ] T079 [P] Verify no secrets in repo (.env files in .gitignore, example .env.example provided)
 - [ ] T080 Create CHANGELOG.md with v1.0.0 initial release notes
-- [ ] T081 Run quickstart.md walkthrough: Local setup, demo simulation, OBS integration, verify all steps work
-- [ ] T082 Final code review: Ensure all code meets constitution requirements (code quality, style, maintainability)
+- [ ] [TEST] T081 Run quickstart.md walkthrough: Local setup, demo simulation, OBS integration, verify all steps work
+- [ ] [TEST] T082 Final code review: Ensure all code meets constitution requirements (code quality, style, maintainability)
 
 ---
 
