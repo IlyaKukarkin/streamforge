@@ -133,7 +133,7 @@ func _attack_enemy(enemy: Node2D):
 	
 	# Check if enemy was killed
 	if enemy_died:
-		enemy_killed.emit(enemy_position, enemy.get("enemy_type", "unknown"))
+		enemy_killed.emit(enemy_position, enemy.get("enemy_type"))
 
 func _update_attack_area_visibility():
 	"""Update visual feedback for attack area"""
@@ -308,7 +308,7 @@ func is_alive() -> bool:
 	"""Check if knight is still alive"""
 	return health > 0
 
-func get_position() -> Vector2:
+func get_knight_position() -> Vector2:
 	"""Get knight's current position"""
 	return global_position
 

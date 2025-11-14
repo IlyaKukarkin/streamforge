@@ -71,6 +71,7 @@ export_presets.cfg
 .mono/
 data_*/
 .tmp/
+.godot/
 
 # IDE
 .vscode/

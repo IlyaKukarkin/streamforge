@@ -3,6 +3,7 @@
 
 import type { DonationQueue } from "./donation-queue.js";
 import type { GameStateManager } from "./game-state.js";
+import type { OverlaySync } from "./overlay-sync.js";
 import { logger } from "./services/logger.js";
 import type {
 	Config,
@@ -33,6 +34,7 @@ export interface QueueStatus {
 export class StreamForgeEventProcessor implements EventProcessor {
 	private donationQueue: DonationQueue;
 	private gameStateManager: GameStateManager;
+	private overlaySync: OverlaySync;
 	private processingInterval: NodeJS.Timeout | null = null;
 	private isProcessing = false;
 
@@ -40,9 +42,11 @@ export class StreamForgeEventProcessor implements EventProcessor {
 		_config: Config,
 		gameStateManager: GameStateManager,
 		donationQueue: DonationQueue,
+		overlaySync: OverlaySync,
 	) {
 		this.gameStateManager = gameStateManager;
 		this.donationQueue = donationQueue;
+		this.overlaySync = overlaySync;
 
 		// Start processing donations at regular intervals
 		this.startProcessing();
@@ -186,12 +190,10 @@ export class StreamForgeEventProcessor implements EventProcessor {
 				return this.applyHealEvent(event);
 
 			case "SPAWN_ENEMY":
+				return this.applySpawnEnemyEvent(event);
+
 			case "SPAWN_DRAGON":
-				// These will be implemented when we add enemy spawning
-				logger.info("Enemy spawning not yet implemented", {
-					eventType: event.eventType,
-				});
-				return this.gameStateManager.getState();
+				return this.applySpawnDragonEvent(event);
 
 			default:
 				logger.warn("Unknown event type", { eventType: event.eventType });
@@ -225,6 +227,47 @@ export class StreamForgeEventProcessor implements EventProcessor {
 		});
 
 		return this.gameStateManager.updateKnightHealth(newHealth);
+	}
+
+	private applySpawnEnemyEvent(event: DonationEvent): GameState {
+		const enemyType = event.parameters.enemyType || "GOBLIN";
+		const donorName = event.viewerName || "Anonymous";
+
+		logger.info("Spawning enemy from donation", {
+			enemyType,
+			donorName,
+			donationId: event.donationId,
+		});
+
+		// Send challenge alert to overlays
+		this.overlaySync.sendChallengeAlert(event);
+
+		// Add enemy spawn to game state
+		return this.gameStateManager.addEnemySpawn(
+			enemyType,
+			donorName,
+			event.donationId,
+		);
+	}
+
+	private applySpawnDragonEvent(event: DonationEvent): GameState {
+		const donorName = event.viewerName || "Anonymous";
+
+		logger.info("Spawning dragon from donation", {
+			donorName,
+			donationAmount: event.amount,
+			donationId: event.donationId,
+		});
+
+		// Send challenge alert to overlays
+		this.overlaySync.sendChallengeAlert(event);
+
+		// Add dragon spawn to game state
+		return this.gameStateManager.addEnemySpawn(
+			"DRAGON",
+			donorName,
+			event.donationId,
+		);
 	}
 
 	public stop(): void {

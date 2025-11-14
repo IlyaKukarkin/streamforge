@@ -10,6 +10,7 @@ class_name EnemySpawner
 
 # Enemy scene references
 @export var enemy_scene: PackedScene
+@export var dragon_scene: PackedScene
 @onready var knight: Knight
 
 # Internal state
@@ -28,12 +29,14 @@ signal enemy_spawned(enemy: Node2D)
 signal enemy_defeated(enemy_position: Vector2, enemy_type: String)
 signal wave_completed(wave_number: int)
 
-func _ready():
+func _ready() -> void:
 	print("[EnemySpawner] Initializing enemy spawner...")
 	
-	# Load enemy scene if not set
+	# Load enemy scenes if not set
 	if not enemy_scene:
-		enemy_scene = preload("res://scenes/Enemy.tscn")
+		push_warning("[EnemySpawner] No enemy_scene set. Please assign it in the inspector.")
+	if not dragon_scene:
+		push_warning("[EnemySpawner] No dragon_scene set. Please assign it in the inspector.")
 	
 	# Find knight reference
 	knight = get_node("../Knight") as Knight
@@ -48,7 +51,7 @@ func _ready():
 	
 	print("[EnemySpawner] Enemy spawner initialized")
 
-func _process(delta):
+func _process(delta: float) -> void:
 	# Update spawn timer
 	spawn_timer -= delta
 	
@@ -78,18 +81,25 @@ func should_spawn_enemy() -> bool:
 
 func spawn_enemy(enemy_type: String = "goblin") -> Node2D:
 	"""Spawn a single enemy at a random position around the knight"""
-	if not enemy_scene:
-		push_error("[EnemySpawner] No enemy scene loaded")
+	# Choose appropriate scene based on enemy type
+	var scene_to_use: PackedScene
+	if enemy_type == "dragon" and dragon_scene:
+		scene_to_use = dragon_scene
+	else:
+		scene_to_use = enemy_scene
+	
+	if not scene_to_use:
+		push_error("[EnemySpawner] No enemy scene loaded for type: ", enemy_type)
 		return null
 	
 	# Create enemy instance
-	var enemy = enemy_scene.instantiate() as Node2D
+	var enemy: Node2D = scene_to_use.instantiate() as Node2D
 	if not enemy:
-		push_error("[EnemySpawner] Failed to instantiate enemy scene")
+		push_error("[EnemySpawner] Failed to instantiate enemy scene for type: ", enemy_type)
 		return null
 	
 	# Set enemy position
-	var spawn_position = get_random_spawn_position()
+	var spawn_position: Vector2 = get_random_spawn_position()
 	enemy.global_position = spawn_position
 	
 	# Configure enemy based on type and wave
@@ -111,16 +121,16 @@ func spawn_enemy(enemy_type: String = "goblin") -> Node2D:
 
 func spawn_wave(enemy_count: int = 0) -> void:
 	"""Spawn a wave of enemies (triggered by donations)"""
-	var spawn_count = enemy_count if enemy_count > 0 else wave_spawn_count
+	var spawn_count: int = enemy_count if enemy_count > 0 else wave_spawn_count
 	
 	print("[EnemySpawner] Spawning wave with ", spawn_count, " enemies")
 	
-	for i in range(spawn_count):
+	for i: int in range(spawn_count):
 		# Add small delay between spawns
 		await get_tree().create_timer(i * 0.2).timeout
 		
 		if should_spawn_enemy():
-			var enemy_type = get_random_enemy_type()
+			var enemy_type: String = get_random_enemy_type()
 			spawn_enemy(enemy_type)
 	wave_in_progress = true
 
@@ -130,17 +140,17 @@ func get_random_spawn_position() -> Vector2:
 		# Fallback to screen edges if no knight
 		return get_screen_edge_position()
 	
-	var knight_pos = knight.global_position
-	var attempts = 0
-	var max_attempts = 20
+	var knight_pos: Vector2 = knight.global_position
+	var attempts: int = 0
+	var max_attempts: int = 20
 	
 	while attempts < max_attempts:
 		# Generate random angle and distance
-		var angle = randf() * 2.0 * PI
-		var distance = randf_range(min_spawn_distance, spawn_radius)
+		var angle: float = randf() * 2.0 * PI
+		var distance: float = randf_range(min_spawn_distance, spawn_radius)
 		
 		# Calculate position
-		var spawn_pos = knight_pos + Vector2(cos(angle), sin(angle)) * distance
+		var spawn_pos: Vector2 = knight_pos + Vector2(cos(angle), sin(angle)) * distance
 		
 		# Check if position is valid (on screen and not too close)
 		if is_valid_spawn_position(spawn_pos, knight_pos):
@@ -155,14 +165,14 @@ func get_random_spawn_position() -> Vector2:
 func is_valid_spawn_position(pos: Vector2, knight_pos: Vector2) -> bool:
 	"""Check if a spawn position is valid"""
 	# Check screen boundaries (with margin)
-	var margin = 50.0
+	var margin: float = 50.0
 	if pos.x < -margin or pos.x > screen_width + margin:
 		return false
 	if pos.y < -margin or pos.y > screen_height + margin:
 		return false
 	
 	# Check minimum distance from knight
-	var distance_to_knight = pos.distance_to(knight_pos)
+	var distance_to_knight: float = pos.distance_to(knight_pos)
 	if distance_to_knight < min_spawn_distance:
 		return false
 	
@@ -170,8 +180,8 @@ func is_valid_spawn_position(pos: Vector2, knight_pos: Vector2) -> bool:
 
 func get_screen_edge_position() -> Vector2:
 	"""Get a random position at the edge of the screen"""
-	var edge = randi() % 4
-	var pos = Vector2.ZERO
+	var edge: int = randi() % 4
+	var pos: Vector2 = Vector2.ZERO
 	
 	match edge:
 		0: # Top edge
@@ -187,7 +197,7 @@ func get_screen_edge_position() -> Vector2:
 
 func get_random_enemy_type() -> String:
 	"""Get a random enemy type based on current wave"""
-	var types = ["goblin"]
+	var types: Array[String] = ["goblin"]
 	
 	# Add stronger enemies in later waves
 	if wave_number >= 3:
@@ -204,9 +214,9 @@ func configure_enemy(enemy: Node2D, enemy_type: String) -> void:
 	if not enemy.has_method("set_stats"):
 		return
 	
-	var base_health = 50
-	var base_attack = 10
-	var base_speed = 100.0
+	var base_health: int = 50
+	var base_attack: int = 10
+	var base_speed: float = 100.0
 	
 	# Adjust stats based on enemy type
 	match enemy_type:
@@ -224,10 +234,10 @@ func configure_enemy(enemy: Node2D, enemy_type: String) -> void:
 			base_speed = 60.0
 	
 	# Scale with wave number
-	var wave_multiplier = 1.0 + (wave_number - 1) * 0.1
-	var final_health = int(base_health * wave_multiplier)
-	var final_attack = int(base_attack * wave_multiplier)
-	var final_speed = base_speed * wave_multiplier
+	var wave_multiplier: float = 1.0 + (wave_number - 1) * 0.1
+	var final_health: int = int(base_health * wave_multiplier)
+	var final_attack: int = int(base_attack * wave_multiplier)
+	var final_speed: float = base_speed * wave_multiplier
 	
 	# Set enemy stats
 	enemy.set_stats(final_health, final_attack, final_speed, enemy_type)
@@ -238,12 +248,12 @@ func cleanup_defeated_enemies() -> void:
 	"""Remove defeated enemies from active list"""
 	var enemies_to_remove: Array[Node2D] = []
 	
-	for enemy in active_enemies:
-		var is_defeated = enemy.get("is_defeated") if is_instance_valid(enemy) else true
+	for enemy: Node2D in active_enemies:
+		var is_defeated: bool = enemy.get("is_defeated") if is_instance_valid(enemy) else true
 		if not is_instance_valid(enemy) or is_defeated:
 			enemies_to_remove.append(enemy)
 	
-	for enemy in enemies_to_remove:
+	for enemy: Node2D in enemies_to_remove:
 		active_enemies.erase(enemy)
 		if is_instance_valid(enemy):
 			enemy.queue_free()
@@ -263,7 +273,7 @@ func complete_wave() -> void:
 	wave_in_progress = false
 
 # Signal handlers
-func _on_enemy_defeated(enemy_position: Vector2, enemy_type: String):
+func _on_enemy_defeated(enemy_position: Vector2, enemy_type: String) -> void:
 	"""Handle enemy defeat notification"""
 	print("[EnemySpawner] Enemy defeated at: ", enemy_position)
 	enemy_defeated.emit(enemy_position, enemy_type)
@@ -284,7 +294,7 @@ func force_spawn_wave(count: int = 3) -> void:
 
 func clear_all_enemies() -> void:
 	"""Remove all active enemies"""
-	for enemy in active_enemies:
+	for enemy: Node2D in active_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	
@@ -303,3 +313,19 @@ func reset_wave() -> void:
 	current_spawn_interval = base_spawn_interval
 	spawn_timer = current_spawn_interval
 	print("[EnemySpawner] Reset to wave 1")
+
+func spawn_donation_enemy(enemy_type: String, donor_name: String) -> Node2D:
+	"""Spawn an enemy from a donation with donor attribution"""
+	print("[EnemySpawner] Spawning ", enemy_type, " from donation by ", donor_name)
+	
+	# Use the existing spawn_enemy method but with custom type
+	var enemy: Node2D = spawn_enemy(enemy_type)
+	
+	if enemy and enemy.has_method("set_donor_info"):
+		enemy.set_donor_info(donor_name)
+	
+	# Show a visual indicator for donation-spawned enemies
+	if enemy and enemy.has_method("mark_as_donation_spawn"):
+		enemy.mark_as_donation_spawn(true)
+	
+	return enemy

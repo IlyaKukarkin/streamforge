@@ -84,14 +84,11 @@ func _process_messages():
 		var packet = websocket.get_packet()
 		var message_text = packet.get_string_from_utf8()
 		
-		try:
-			var message = JSON.parse_string(message_text)
-			if message:
-				_handle_message(message)
-			else:
-				print("[WebSocketClient] Failed to parse message: ", message_text)
-		except:
-			print("[WebSocketClient] Error parsing message: ", message_text)
+		var message = JSON.parse_string(message_text)
+		if message != null:
+			_handle_message(message)
+		else:
+			print("[WebSocketClient] Failed to parse message: ", message_text)
 
 func _handle_message(message: Dictionary):
 	"""Handle incoming messages from server"""
@@ -137,7 +134,7 @@ func _send_client_info():
 func send_message(message: Dictionary):
 	"""Send a message to the server"""
 	if not message.has("timestamp"):
-		message["timestamp"] = Time.get_time_dict_from_system()["unix"]
+		message["timestamp"] = Time.get_unix_time_from_system()
 	
 	if is_connected and websocket.get_ready_state() == WebSocketPeer.STATE_OPEN:
 		var message_text = JSON.stringify(message)
@@ -193,7 +190,7 @@ func send_ping():
 	var message = {
 		"type": "ping",
 		"data": {
-			"timestamp": Time.get_time_dict_from_system()["unix"]
+			# "timestamp": Time.get_unix_time_from_system()
 		}
 	}
 	send_message(message)
@@ -227,6 +224,6 @@ func send_game_reset():
 	"""Send game reset notification to backend"""
 	var message = {
 		"type": "game_reset",
-		"timestamp": Time.get_time_dict_from_system()["unix"]
+		"timestamp": Time.get_unix_time_from_system()
 	}
 	send_message(message)

@@ -17,6 +17,11 @@ var is_attacking: bool = false
 var attack_timer: float = 0.0
 var last_attack_time: float = 0.0
 
+# Donation spawn info
+var is_donation_spawn: bool = false
+var donor_name: String = ""
+var spawn_time: float = 0.0
+
 # AI behavior
 var state: String = "seeking" # seeking, attacking, dead
 var detection_range: float = 200.0
@@ -32,7 +37,7 @@ var stun_timer: float = 0.0
 signal enemy_defeated(enemy_position: Vector2, enemy_type: String)
 signal knight_attacked(damage: int, enemy_position: Vector2)
 
-func _ready():
+func _ready() -> void:
 	print("[Enemy] Initializing ", enemy_type, " enemy...")
 	
 	# Initialize health
@@ -49,7 +54,7 @@ func _ready():
 	
 	print("[Enemy] ", enemy_type, " initialized with health: ", health)
 
-func _physics_process(delta):
+func _physics_process(delta: float) -> void:
 	if is_defeated or stun_timer > 0.0:
 		if stun_timer > 0.0:
 			stun_timer -= delta
@@ -73,26 +78,26 @@ func _physics_process(delta):
 
 func find_knight() -> Knight:
 	"""Find the knight in the scene"""
-	var knight_node = get_node("../Knight")
+	var knight_node: Node = get_node("../Knight")
 	if knight_node and knight_node is Knight:
 		return knight_node as Knight
 	
 	# Search in parent's children if direct path doesn't work
-	var parent = get_parent()
-	for child in parent.get_children():
+	var parent: Node = get_parent()
+	for child: Node in parent.get_children():
 		if child is Knight:
 			return child as Knight
 	
 	push_error("[Enemy] Could not find Knight node")
 	return null
 
-func seek_knight(delta: float):
+func seek_knight(_delta: float) -> void:
 	"""Move towards the knight"""
 	if not target_knight or not target_knight.is_alive():
 		velocity = Vector2.ZERO
 		return
 	
-	var distance_to_knight = global_position.distance_to(target_knight.global_position)
+	var distance_to_knight: float = global_position.distance_to(target_knight.global_position)
 	
 	# Switch to attack state if close enough
 	if distance_to_knight <= attack_range:
@@ -101,20 +106,20 @@ func seek_knight(delta: float):
 		return
 	
 	# Move towards knight
-	var direction = (target_knight.global_position - global_position).normalized()
+	var direction: Vector2 = (target_knight.global_position - global_position).normalized()
 	velocity = direction * move_speed
 	
 	# Face the knight
 	if direction.x != 0:
 		sprite.scale.x = abs(sprite.scale.x) * sign(direction.x)
 
-func attack_knight(delta: float):
+func attack_knight(_delta: float) -> void:
 	"""Attack the knight if in range and cooldown is ready"""
 	if not target_knight or not target_knight.is_alive():
 		state = "seeking"
 		return
 	
-	var distance_to_knight = global_position.distance_to(target_knight.global_position)
+	var distance_to_knight: float = global_position.distance_to(target_knight.global_position)
 	
 	# Return to seeking if knight moved away
 	if distance_to_knight > attack_range * 1.2: # Add some hysteresis
@@ -129,7 +134,7 @@ func attack_knight(delta: float):
 		perform_attack()
 		attack_timer = attack_cooldown
 
-func perform_attack():
+func perform_attack() -> void:
 	"""Execute an attack on the knight"""
 	if not target_knight:
 		return
@@ -137,7 +142,7 @@ func perform_attack():
 	print("[Enemy] ", enemy_type, " attacks knight for ", attack_damage, " damage")
 	
 	# Deal damage to knight
-	var knight_died = target_knight.take_damage(attack_damage)
+	var _knight_died: bool = target_knight.take_damage(attack_damage)
 	
 	# Visual attack feedback
 	show_attack_effect()
@@ -147,11 +152,11 @@ func perform_attack():
 	
 	last_attack_time = Time.get_time_dict_from_system()["unix"]
 
-func show_attack_effect():
+func show_attack_effect() -> void:
 	"""Show visual feedback for attack"""
 	# Flash white briefly
 	if sprite:
-		var tween = create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color.WHITE * 1.5, 0.1)
 		tween.tween_property(sprite, "modulate", get_base_color(), 0.1)
 
@@ -179,15 +184,15 @@ func take_damage(damage: int) -> bool:
 	
 	return false
 
-func show_damage_effect():
+func show_damage_effect() -> void:
 	"""Show visual feedback for taking damage"""
 	# Flash red briefly
 	if sprite:
-		var tween = create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color.RED, 0.2)
 		tween.tween_property(sprite, "modulate", get_base_color(), 0.2)
 
-func handle_death():
+func handle_death() -> void:
 	"""Handle enemy death"""
 	if is_defeated:
 		return
@@ -201,7 +206,7 @@ func handle_death():
 	
 	# Visual death effect
 	if sprite:
-		var tween = create_tween()
+		var tween: Tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 1.0)
 		tween.tween_property(sprite, "scale", Vector2.ZERO, 1.0)
 		tween.tween_callback(queue_free)
@@ -213,7 +218,7 @@ func handle_death():
 	# Emit defeat signal
 	enemy_defeated.emit(global_position, enemy_type)
 
-func update_health_bar():
+func update_health_bar() -> void:
 	"""Update the health bar display"""
 	if not health_bar:
 		return
@@ -222,23 +227,23 @@ func update_health_bar():
 	health_bar.value = health
 	
 	# Change color based on health percentage
-	var health_percent = float(health) / float(max_health)
-	var bar_color = Color.GREEN
+	var health_percent: float = float(health) / float(max_health)
+	var _bar_color: Color = Color.GREEN
 	
 	if health_percent <= 0.3:
-		bar_color = Color.RED
+		_bar_color = Color.RED
 	elif health_percent <= 0.6:
-		bar_color = Color.YELLOW
+		_bar_color = Color.YELLOW
 	
 	# Note: This would require a custom theme or StyleBoxFlat to change color
 	# For now, the health bar will use default styling
 
-func update_sprite_appearance():
+func update_sprite_appearance() -> void:
 	"""Update sprite appearance based on enemy type"""
 	if not sprite:
 		return
 	
-	var base_color = get_base_color()
+	var base_color: Color = get_base_color()
 	sprite.modulate = base_color
 
 func get_base_color() -> Color:
@@ -254,7 +259,7 @@ func get_base_color() -> Color:
 			return Color.WHITE
 
 # Public API for configuration
-func set_stats(new_health: int, new_attack: int, new_speed: float, new_type: String):
+func set_stats(new_health: int, new_attack: int, new_speed: float, new_type: String) -> void:
 	"""Set enemy stats (called by spawner)"""
 	max_health = new_health
 	health = new_health
@@ -281,7 +286,31 @@ func get_distance_to_knight() -> float:
 		return global_position.distance_to(target_knight.global_position)
 	return -1.0
 
-func force_death():
+func force_death() -> void:
 	"""Force enemy death (for admin/testing)"""
 	health = 0
 	handle_death()
+
+# Donation spawn methods
+func set_donor_info(donor: String) -> void:
+	"""Set information about the donor who spawned this enemy"""
+	donor_name = donor
+	spawn_time = Time.get_time_dict_from_system()["unix"]
+	print("[Enemy] Enemy spawned by donor: ", donor)
+
+func mark_as_donation_spawn(is_donation: bool) -> void:
+	"""Mark this enemy as spawned from a donation"""
+	is_donation_spawn = is_donation
+	if is_donation:
+		# Make donation-spawned enemies slightly more prominent
+		if sprite:
+			sprite.scale *= 1.1  # 10% larger
+		print("[Enemy] Enemy marked as donation spawn")
+
+func get_donor_info() -> Dictionary:
+	"""Get donor information for this enemy"""
+	return {
+		"is_donation_spawn": is_donation_spawn,
+		"donor_name": donor_name,
+		"spawn_time": spawn_time
+	}

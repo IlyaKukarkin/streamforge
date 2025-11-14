@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://b6yqx8xj4x2tc"]
 
-[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1_0xb8m"]
+[ext_resource type="Script" uid="uid://ls05ae3714xo" path="res://scripts/game_manager.gd" id="1_0xb8m"]
 [ext_resource type="PackedScene" uid="uid://c7yhx8m5x3pq1" path="res://scenes/Knight.tscn" id="2_8v7xk"]
-[ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="3_h9x2l"]
+[ext_resource type="Script" uid="uid://dnf3iujfc7hit" path="res://scripts/enemy_spawner.gd" id="3_h9x2l"]
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_0xb8m")
@@ -20,6 +20,7 @@ color = Color(0.2, 0.3, 0.4, 1)
 
 [node name="Knight" parent="." instance=ExtResource("2_8v7xk")]
 position = Vector2(100, 500)
+scale = Vector2(0.003, 0.003)
 
 [node name="EnemySpawner" type="Node2D" parent="."]
 position = Vector2(1400, 0)
@@ -42,7 +43,6 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_top = -50.0
 offset_right = 200.0
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
@@ -51,6 +51,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 text = "Health: 100"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -62,5 +64,4 @@ anchor_right = 1.0
 offset_left = -300.0
 offset_top = 60.0
 offset_bottom = 100.0
-text = ""
 horizontal_alignment = 2

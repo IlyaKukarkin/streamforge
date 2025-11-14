@@ -13,11 +13,10 @@ config_version=5
 config/name="Endless Game Stream"
 config/description="2D endless side-scroller with donation-driven events for streaming"
 run/main_scene="res://scenes/Game.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.5", "Forward Plus")
 
 [debug]
 
-gdscript/warnings/enable=true
 gdscript/warnings/unused_variable=true
 gdscript/warnings/unused_local_constant=true
 gdscript/warnings/unused_private_class_variable=true
@@ -37,10 +36,9 @@ window/size/resizable=false
 
 [input]
 
-# Admin controls for testing
-ui_accept={
+#Admincontrolsfortestingui_accept={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194309,"physical_keycode":0,"key_label":0,"unicode":4194309,"echo":false,"script":null)
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194309,"physical_keycode":0,"key_label":0,"unicode":4194309,"location":0,"echo":false,"script":null)
 ]
 }
 
@@ -52,5 +50,4 @@ ui_accept={
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
 textures/canvas_textures/default_texture_filter=0

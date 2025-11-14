@@ -7,6 +7,7 @@ import type { GameWebSocketServer } from "./websocket-server.js";
 
 export interface OverlaySync {
 	sendDonationAlert(donation: DonationEvent): void;
+	sendChallengeAlert(donation: DonationEvent): void;
 	sendGameStateUpdate(gameState: GameState): void;
 	sendOverlayUpdate(overlayData: OverlayState): void;
 	sendBoostExpiredAlert(boostType: string): void;
@@ -47,9 +48,37 @@ export class StreamForgeOverlaySync implements OverlaySync {
 			},
 		});
 
+		// Send challenge-specific alert for enemy spawns
+		if (
+			donation.eventType === "SPAWN_ENEMY" ||
+			donation.eventType === "SPAWN_DRAGON"
+		) {
+			this.sendChallengeAlert(donation);
+		}
+
 		// Also send the original donation event for game clients (exclude overlays)
 		this.webSocketServer.broadcastDonation(donation, {
 			excludeType: "overlay",
+		});
+	}
+
+	public sendChallengeAlert(donation: DonationEvent): void {
+		logger.info("Sending challenge alert to overlays", {
+			donationId: donation.donationId,
+			viewerName: donation.viewerName,
+			eventType: donation.eventType,
+		});
+
+		this.webSocketServer.broadcastMessage({
+			type: "donation.alert",
+			payload: {
+				donationId: donation.donationId,
+				viewerName: donation.viewerName,
+				amount: donation.amount,
+				eventType: donation.eventType,
+				parameters: donation.parameters,
+				timestamp: Date.now(),
+			},
 		});
 	}
 

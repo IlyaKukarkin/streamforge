@@ -1,5 +1,10 @@
 // Game state management service
-import type { DonationEvent, GameState, GameStatus } from "./types/index.js";
+import type {
+	DonationEvent,
+	EnemyType,
+	GameState,
+	GameStatus,
+} from "./types/index.js";
 
 export class GameStateManager {
 	private static readonly BASE_KNIGHT_ATTACK = 20;
@@ -284,6 +289,40 @@ export class GameStateManager {
 	}
 
 	/**
+	 * Add enemy spawn to pending list
+	 */
+	addEnemySpawn(
+		enemyType: string,
+		donorName: string,
+		donationId: string,
+	): GameState {
+		const spawnId = `spawn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+		const newSpawn = {
+			spawnId,
+			enemyType: enemyType as EnemyType, // Will be validated in game
+			donorName,
+			donationId,
+			createdAt: Date.now(),
+		};
+
+		const pendingEnemySpawns = [...this.gameState.pendingEnemySpawns, newSpawn];
+		this.setState({ pendingEnemySpawns });
+		return this.getState();
+	}
+
+	/**
+	 * Remove enemy spawn from pending list (after game processes it)
+	 */
+	removeEnemySpawn(spawnId: string): GameState {
+		const pendingEnemySpawns = this.gameState.pendingEnemySpawns.filter(
+			(spawn) => spawn.spawnId !== spawnId,
+		);
+		this.setState({ pendingEnemySpawns });
+		return this.getState();
+	}
+
+	/**
 	 * Create initial game state
 	 */
 	private createInitialState(gameId: string): GameState {
@@ -297,6 +336,7 @@ export class GameStateManager {
 			boostActive: false,
 			boostExpiry: 0,
 			activeDonations: [],
+			pendingEnemySpawns: [],
 			startTime: 0,
 			lastUpdated: Date.now(),
 		};
@@ -311,6 +351,22 @@ export function createGameStateManager(gameId?: string): GameStateManager {
 	return gameStateInstance;
 }
 
+export function getGameStateManager(): GameStateManager {
+	if (!gameStateInstance) {
+		throw new Error(
+			"GameStateManager not initialized. Call createGameStateManager() first.",
+		);
+	}
+	return gameStateInstance;
+}
+export function getGameStateManager(): GameStateManager {
+	if (!gameStateInstance) {
+		throw new Error(
+			"GameStateManager not initialized. Call createGameStateManager() first.",
+		);
+	}
+	return gameStateInstance;
+}
 export function getGameStateManager(): GameStateManager {
 	if (!gameStateInstance) {
 		throw new Error(

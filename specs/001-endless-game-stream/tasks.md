@@ -174,16 +174,16 @@ bun run scripts/donate-simulator.ts spree 5 3000
 
 ### Implementation for User Story 3
 
-- [ ] T046 [P] [US3] Implement SPAWN_ENEMY/SPAWN_DRAGON event handler in backend/src/event-processor.ts (apply to game state, queue enemy)
-- [ ] T047 [P] [US3] Implement enemy spawner with donation types in game/scripts/enemy-spawner.gd (spawn GOBLIN, ORC, DRAGON based on event, track donor info)
-- [ ] T048 [P] [US3] Create Dragon enemy prefab in game/scenes/Dragon.tscn (higher stats: 100 health, 30 attack, larger sprite)
-- [ ] T049 [US3] Add dragon to enemy type definitions in game/scripts/enemy.gd (DRAGON type with unique stats and behavior)
-- [ ] T050 [US3] Implement enemy stacking/queue management in game/scripts/enemy-manager.gd (track multiple active enemies, resolve conflicts)
-- [ ] T051 [P] [US3] Create challenge overlay in backend/overlays/challenge-alert.html (display "User123 donated $X to spawn DRAGON!")
-- [ ] T052 [US3] Implement overlay update on challenge spawn in backend/src/overlay-sync.ts (send overlay.donation_alert for challenge events)
-- [ ] T053 [P] [US3] Create demo challenge donation in backend/scripts/donate-simulator.ts (simulate SPAWN_DRAGON event with amount 10 USD)
-- [ ] T054 [US3] Implement cooldown for SPAWN_DRAGON in backend/src/donation-queue.ts (max 1 dragon per 30 seconds)
-- [ ] T055 [US3] Test P3 user story: Simulate dragon spawn, verify appears in-game, verify high difficulty, verify overlay shows donor
+- [x] T046 [P] [US3] Implement SPAWN_ENEMY/SPAWN_DRAGON event handler in backend/src/event-processor.ts (apply to game state, queue enemy)
+- [x] T047 [P] [US3] Implement enemy spawner with donation types in game/scripts/enemy-spawner.gd (spawn GOBLIN, ORC, DRAGON based on event, track donor info)
+- [x] T048 [P] [US3] Create Dragon enemy prefab in game/scenes/Dragon.tscn (higher stats: 100 health, 30 attack, larger sprite)
+- [x] T049 [US3] Add dragon to enemy type definitions in game/scripts/enemy.gd (DRAGON type with unique stats and behavior)
+- [x] T050 [US3] Implement enemy stacking/queue management in game/scripts/enemy-manager.gd (track multiple active enemies, resolve conflicts)
+- [x] T051 [P] [US3] Create challenge overlay in backend/overlays/challenge-alert.html (display "User123 donated $X to spawn DRAGON!")
+- [x] T052 [US3] Implement overlay update on challenge spawn in backend/src/overlay-sync.ts (send overlay.donation_alert for challenge events)
+- [x] T053 [P] [US3] Create demo challenge donation in backend/scripts/donate-simulator.ts (simulate SPAWN_DRAGON event with amount 10 USD)
+- [x] T054 [US3] Implement cooldown for SPAWN_DRAGON in backend/src/donation-queue.ts (max 1 dragon per 30 seconds)
+- [ ] T055 [US3] Test P3 user story: Simulate dragon spawn, verify appears in-game, verify high difficulty, verify overlay shows donor [BLOCKED: Server startup issue]
 
 **Checkpoint**: All user stories should now be independently functional
 

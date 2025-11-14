@@ -58,13 +58,13 @@ func update_wave(wave: int):
 	if wave_label:
 		wave_label.text = "Wave: " + str(wave)
 
-func update_boost_timer(time_remaining: float, total_duration: float, boost_type: String):
+func update_boost_timer(time_remaining: float, total_duration: float, boost_type_name: String) -> void:
 	"""Update the boost timer display"""
 	boost_time_remaining = time_remaining
 	boost_duration = total_duration
-	current_boost_type = boost_type
+	current_boost_type = boost_type_name
 	
-	if time_remaining > 0 and boost_type != "":
+	if time_remaining > 0 and boost_type_name != "":
 		# Show boost info
 		if boost_timer:
 			var minutes = int(time_remaining) / 60
@@ -73,7 +73,7 @@ func update_boost_timer(time_remaining: float, total_duration: float, boost_type
 			boost_timer.visible = true
 			
 		if boost_type:
-			boost_type.text = boost_type.to_upper() + " ACTIVE"
+			boost_type.text = current_boost_type.to_upper() + " ACTIVE"
 			boost_type.visible = true
 			
 		# Update progress bar

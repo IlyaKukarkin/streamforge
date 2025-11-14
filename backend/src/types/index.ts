@@ -35,6 +35,7 @@ export interface GameState {
 	readonly boostActive: boolean;
 	readonly boostExpiry: number; // timestamp
 	readonly activeDonations: DonationEvent[];
+	readonly pendingEnemySpawns: PendingEnemySpawn[]; // enemies to spawn
 	readonly startTime: number; // timestamp
 	readonly lastUpdated: number; // timestamp
 }
@@ -82,6 +83,14 @@ export interface Enemy {
 	readonly defeatedBy?: string; // donationId
 	readonly createdAt: number; // timestamp
 	readonly defeatedAt?: number; // timestamp
+}
+
+export interface PendingEnemySpawn {
+	readonly spawnId: string;
+	readonly enemyType: EnemyType;
+	readonly donorName: string;
+	readonly donationId: string;
+	readonly createdAt: number; // timestamp when spawn was requested
 }
 
 export interface Knight {

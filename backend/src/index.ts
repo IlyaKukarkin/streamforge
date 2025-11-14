@@ -308,7 +308,9 @@ class StreamForgeServer {
 
 // Main execution
 async function main(): Promise<void> {
+	console.log("Creating StreamForgeServer instance...");
 	const server = new StreamForgeServer();
+	console.log("StreamForgeServer created successfully");
 
 	// Graceful shutdown handling
 	process.on("SIGINT", async () => {
@@ -347,11 +349,24 @@ async function main(): Promise<void> {
 }
 
 // Start the server if this file is run directly (ES module check)
-if (import.meta.url === `file://${process.argv[1]}`) {
+console.log("Script starting...");
+console.log("import.meta.url:", import.meta.url);
+console.log("process.argv[1]:", process.argv[1]);
+
+// More robust check for direct execution
+const isDirectExecution = import.meta.url.includes(
+	process.argv[1]?.replace(/\\/g, "/") || "",
+);
+console.log("isDirectExecution:", isDirectExecution);
+
+if (isDirectExecution) {
+	console.log("Starting main function...");
 	main().catch((error) => {
 		console.error("Failed to start StreamForge server:", error);
 		process.exit(1);
 	});
+} else {
+	console.log("Not running as main module, skipping server start");
 }
 
 export { StreamForgeServer };
