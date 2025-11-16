@@ -166,14 +166,14 @@ func test_hide_boost():
 func set_boost_manager(manager: BoostManager):
 	"""Manually set boost manager reference"""
 	if boost_manager:
-		if boost_manager.boost_started.is_connected(_on_boost_started, self):
-			boost_manager.boost_started.disconnect(_on_boost_started, self)
-		if boost_manager.boost_expired.is_connected(_on_boost_expired, self):
-			boost_manager.boost_expired.disconnect(_on_boost_expired, self)
-		if boost_manager.boost_time_updated.is_connected(_on_boost_time_updated, self):
-			boost_manager.boost_time_updated.disconnect(_on_boost_time_updated, self)
+		if boost_manager.boost_started.is_connected(_on_boost_started):
+			boost_manager.boost_started.disconnect(_on_boost_started)
+		if boost_manager.boost_expired.is_connected(_on_boost_expired):
+			boost_manager.boost_expired.disconnect(_on_boost_expired)
+		if boost_manager.boost_time_updated.is_connected(_on_boost_time_updated):
+			boost_manager.boost_time_updated.disconnect(_on_boost_time_updated)
 	boost_manager = manager
 	if boost_manager:
-		boost_manager.boost_started.connect(_on_boost_started, self)
-		boost_manager.boost_expired.connect(_on_boost_expired, self)
-		boost_manager.boost_time_updated.connect(_on_boost_time_updated, self)
+		boost_manager.boost_started.connect(_on_boost_started)
+		boost_manager.boost_expired.connect(_on_boost_expired)
+		boost_manager.boost_time_updated.connect(_on_boost_time_updated)

@@ -78,16 +78,13 @@ func _handle_input():
 	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("attack"):
 		_try_attack()
 
-func _handle_movement(delta):
+func _handle_movement(_delta: float) -> void:
 	"""Knight remains stationary; background and obstacles scroll to create movement illusion"""
-	# No movement for knight; velocity is zero
 	velocity = Vector2.ZERO
-	# Background and obstacles should be moved by the game manager or scene to create the illusion of movement
-	# Ensure sprite faces right
 	if sprite:
 		sprite.scale.x = abs(sprite.scale.x)
 
-func _try_attack() -> void:
+func _try_attack():
 	"""Attempt to perform an attack"""
 	if attack_cooldown > 0 or is_attacking:
 		return
@@ -102,27 +99,25 @@ func _try_attack() -> void:
 	# Check for enemies in attack range
 	_check_attack_hits()
 
-func _check_attack_hits() -> void:
+func _check_attack_hits():
 	"""Check for enemies hit by the attack"""
 	if not attack_area:
 		return
 	
-	var bodies: Array = attack_area.get_overlapping_bodies()
+	var bodies = attack_area.get_overlapping_bodies()
 	for body in bodies:
-		if body is Node2D and body != self and "take_damage" in body:
+		if body.has_method("take_damage") and body != self:
 			_attack_enemy(body)
 
-func _attack_enemy(enemy: Node2D) -> void:
+func _attack_enemy(enemy: Node2D):
 	"""Deal damage to an enemy"""
-	var damage: int = Combat.calculate_knight_damage(self)
-	var enemy_position: Vector2 = enemy.global_position
+	var damage = Combat.calculate_knight_damage(self)
+	var enemy_position = enemy.global_position
 	
 	print("[Knight] Dealing ", damage, " damage to enemy at ", enemy_position)
 	
 	# Apply damage
-	var enemy_died: bool = false
-	if "take_damage" in enemy:
-		enemy_died = enemy.take_damage(damage)
+	var enemy_died = enemy.take_damage(damage)
 	
 	# Create damage visual feedback
 	Combat.create_damage_number(damage, enemy_position)
@@ -134,7 +129,7 @@ func _attack_enemy(enemy: Node2D) -> void:
 	if enemy_died:
 		enemy_killed.emit(enemy_position, enemy.get("enemy_type"))
 
-func _update_attack_area_visibility() -> void:
+func _update_attack_area_visibility():
 	"""Update visual feedback for attack area"""
 	if not attack_area:
 		return
@@ -143,10 +138,10 @@ func _update_attack_area_visibility() -> void:
 	# The attack area collision remains active
 	pass
 
-func _check_screen_boundaries() -> void:
+func _check_screen_boundaries():
 	"""Keep knight within screen boundaries"""
-	var screen_size: Vector2 = get_viewport_rect().size
-	var margin: float = 32.0  # Keep knight 32 pixels from edge
+	var screen_size = get_viewport_rect().size
+	var margin = 32.0  # Keep knight 32 pixels from edge
 	
 	# Keep knight within horizontal bounds
 	if global_position.x < margin:
@@ -160,7 +155,7 @@ func _check_screen_boundaries() -> void:
 	elif global_position.y > screen_size.y - margin:
 		global_position.y = screen_size.y - margin
 
-func _on_attack_area_body_entered(body: Node2D) -> void:
+func _on_attack_area_body_entered(body: Node2D):
 	"""Handle enemy entering attack range (only used during active attack)"""
 	if is_attacking and body.has_method("take_damage") and body != self:
 		_attack_enemy(body)
@@ -187,9 +182,9 @@ func take_damage(damage: int) -> bool:
 	
 	return false
 
-func heal(amount: int) -> void:
+func heal(amount: int):
 	"""Restore health"""
-	var old_health: int = health
+	var old_health = health
 	health = min(max_health, health + amount)
 	
 	if health != old_health:
@@ -197,23 +192,23 @@ func heal(amount: int) -> void:
 		health_changed.emit(health, max_health)
 		_update_heal_feedback()
 
-func _update_damage_feedback() -> void:
+func _update_damage_feedback():
 	"""Visual feedback for taking damage"""
 	# Flash red briefly
 	if sprite:
-		var tween: Tween = create_tween()
+		var tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color.RED, 0.1)
 		tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 
-func _update_heal_feedback() -> void:
+func _update_heal_feedback():
 	"""Visual feedback for healing"""
 	# Flash green briefly
 	if sprite:
-		var tween: Tween = create_tween()
+		var tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color.GREEN, 0.2)
 		tween.tween_property(sprite, "modulate", Color.WHITE, 0.2)
 
-func _handle_death() -> void:
+func _handle_death():
 	"""Handle knight death"""
 	print("[Knight] Knight has died!")
 	knight_died.emit()
@@ -223,12 +218,12 @@ func _handle_death() -> void:
 	
 	# Visual death effect
 	if sprite:
-		var tween: Tween = create_tween()
+		var tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 1.0)
 		tween.tween_property(sprite, "scale", Vector2.ZERO, 1.0)
 
 # Boost management
-func apply_speed_boost(multiplier: float) -> void:
+func apply_speed_boost(multiplier: float):
 	"""Apply speed boost with given multiplier"""
 	speed_boost_multiplier = multiplier
 	speed_boost_active = true
@@ -238,14 +233,14 @@ func apply_speed_boost(multiplier: float) -> void:
 	if sprite:
 		sprite.modulate = Color(0.5, 0.5, 1.5)  # Blue tint
 
-func remove_speed_boost() -> void:
+func remove_speed_boost():
 	"""Remove active speed boost"""
 	speed_boost_active = false
 	speed_boost_multiplier = 1.0
 	_update_speed()
 	_reset_sprite_color()
 
-func apply_damage_boost(multiplier: float) -> void:
+func apply_damage_boost(multiplier: float):
 	"""Apply damage boost with given multiplier"""
 	damage_boost_multiplier = multiplier
 	damage_boost_active = true
@@ -255,14 +250,14 @@ func apply_damage_boost(multiplier: float) -> void:
 	if sprite:
 		sprite.modulate = Color(1.5, 0.5, 0.5)  # Red tint
 
-func remove_damage_boost() -> void:
+func remove_damage_boost():
 	"""Remove active damage boost"""
 	damage_boost_active = false
 	damage_boost_multiplier = 1.0
 	_update_damage()
 	_reset_sprite_color()
 
-func apply_shield(enabled: bool) -> void:
+func apply_shield(enabled: bool):
 	"""Apply or remove shield protection"""
 	is_shielded = enabled
 	
@@ -273,19 +268,19 @@ func apply_shield(enabled: bool) -> void:
 		else:
 			_reset_sprite_color()
 
-func _update_speed() -> void:
+func _update_speed():
 	"""Recalculate current speed based on boosts"""
 	current_speed = base_speed
 	if speed_boost_active:
 		current_speed *= speed_boost_multiplier
 
-func _update_damage() -> void:
+func _update_damage():
 	"""Recalculate current damage based on boosts"""
 	current_damage = base_damage
 	if damage_boost_active:
 		current_damage = int(current_damage * damage_boost_multiplier)
 
-func _reset_sprite_color() -> void:
+func _reset_sprite_color():
 	"""Reset sprite to default color"""
 	if sprite:
 		# Check for active boosts to maintain their colors
@@ -311,7 +306,7 @@ func get_knight_position() -> Vector2:
 	"""Get knight's current position"""
 	return global_position
 
-func reset_knight() -> void:
+func reset_knight():
 	"""Reset knight to initial state (for game restart)"""
 	health = max_health
 	current_speed = base_speed
