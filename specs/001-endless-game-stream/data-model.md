@@ -106,7 +106,7 @@ Represents the knight character controlled by the game logic.
 - `attack`: number (base attack, 0-100, default 20)
 - `attackBoost`: number (percentage boost, 0-100, default 0)
 - `effectiveAttack`: number (calculated: attack * (1 + attackBoost/100))
-- `x`: number (x position, always moves right)
+- `x`: number (x position, stationary; background scrolls to create movement illusion)
 - `y`: number (y position, fixed middle of screen)
 - `status`: enum (ALIVE, DEFEATED)
 - `defeatedBy`: string (enemyId that defeated knight)
@@ -116,7 +116,7 @@ Represents the knight character controlled by the game logic.
 - `attack` is 0-100
 - `attackBoost` is 0-100; reset to 0 after boost expiry
 - `effectiveAttack` is always calculated, never set directly
-- `x` always increments (right movement)
+- `x` remains constant (stationary knight); background and obstacles scroll to create movement illusion
 
 ---
 

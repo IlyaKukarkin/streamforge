@@ -32,3 +32,4 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
+- Knight movement is implemented as an illusion: the knight remains stationary while the background and obstacles scroll to create the appearance of movement (per updated specification).

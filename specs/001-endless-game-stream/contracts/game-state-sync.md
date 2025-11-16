@@ -53,7 +53,7 @@ This contract defines the WebSocket protocol for continuous game state synchroni
     "knightHealth": 85,
     "knightAttack": 20,
     "knightAttackBoost": 0,
-    "knightX": 1250,
+    "knightX": 1250, // stationary; background scrolls to create movement illusion
     "score": 5250,
     "wave": 8,
     "activeDonations": [
@@ -86,7 +86,7 @@ This contract defines the WebSocket protocol for continuous game state synchroni
 - **knightHealth**: 0-100
 - **knightAttack**: 0-100 (base)
 - **knightAttackBoost**: 0-100 (percentage boost, 0 if not active)
-- **knightX**: X position (always increasing)
+- **knightX**: X position (stationary; background scrolls to create movement illusion)
 - **score**: Total points
 - **wave**: Enemy wave number
 - **activeDonations**: List of currently active donation effects

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://pl6q40b7knxd"
-path="res://.godot/imported/knight.svg-d9ff7be1f9c4d93c51ebaaee1cc6b34c.ctex"
+uid="uid://cmykvfictpvw"
+path="res://.godot/imported/dragon.png-07e3423f5a8614e88193baf4eb1ce12b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/knight.svg"
-dest_files=["res://.godot/imported/knight.svg-d9ff7be1f9c4d93c51ebaaee1cc6b34c.ctex"]
+source_file="res://assets/dragon.png"
+dest_files=["res://.godot/imported/dragon.png-07e3423f5a8614e88193baf4eb1ce12b.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

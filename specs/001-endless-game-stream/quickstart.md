@@ -72,7 +72,7 @@ In Godot editor:
 2. Click "Play" (F5)
 3. The game connects to the backend WebSocket automatically
 
-Expected: Game starts, knight walks right, score displays.
+Expected: Game starts, knight appears to move to the right (background and obstacles scroll; knight remains stationary), score displays.
 
 ### Simulate Donations (Demo Script)
 

@@ -9,7 +9,7 @@ directories captured above]
 
 ## Summary
 
-Build a production-ready, deployable MVP of an endless 2D side-scroller "streamable" game with donation-driven events. Use Godot 4 (GDScript) with TypeScript integration for the game and Bun + TypeScript for the backend bridge with queue. The backend receives donation events (simulate Streamlabs/Twitch in dev), maps donations to in-game commands, and forwards them to the game via WebSocket. OBS runs on the same VPS, captures the Godot window, and shows HTML overlays served by the backend. Provide code, Dockerfiles (or PM2 start files), instructions for VPS setup, and deployment steps. For each component produce README, and a small demo script that simulates donations. Use clear JSON protocols for messages, include rate-limiting, cooldowns, and admin HTTP endpoints (start/stop, stats). Prioritize reliability (auto-restart), security (no secrets in repo), and observability (logs + basic metrics).
+Build a production-ready, deployable MVP of an endless 2D side-scroller "streamable" game with donation-driven events. The knight character appears to move to the right, but actually remains stationary while the background and obstacles scroll to the side, creating the illusion of movement (similar to Flappy Bird). Use Godot 4 (GDScript) with TypeScript integration for the game and Bun + TypeScript for the backend bridge with queue. The backend receives donation events (simulate Streamlabs/Twitch in dev), maps donations to in-game commands, and forwards them to the game via WebSocket. OBS runs on the same VPS, captures the Godot window, and shows HTML overlays served by the backend. Provide code, Dockerfiles (or PM2 start files), instructions for VPS setup, and deployment steps. For each component produce README, and a small demo script that simulates donations. Use clear JSON protocols for messages, include rate-limiting, cooldowns, and admin HTTP endpoints (start/stop, stats). Prioritize reliability (auto-restart), security (no secrets in repo), and observability (logs + basic metrics).
 
 ## Technical Context
 
@@ -19,7 +19,7 @@ Build a production-ready, deployable MVP of an endless 2D side-scroller "streama
 **Testing**: Deferred for prototype; backlog maintained for stabilization
 **Target Platform**: Linux VPS (Ubuntu 22.04+), OBS Studio, browser overlays
 **Project Type**: Multi-component (game, backend, overlays)
-**Performance Goals**: <200ms event latency (donation to game), 60 FPS game, 99% uptime
+**Performance Goals**: <200ms event latency (donation to game), 60 FPS game, 99% uptime. Knight remains stationary; background and obstacles scroll to create movement illusion.
 **Constraints**: No secrets in repo, auto-restart on crash, basic metrics/logs, rate-limiting/cooldowns for donation events
 **Scale/Scope**: MVP for 1-100 concurrent viewers, 1 game instance, 1 stream
 

@@ -19,6 +19,7 @@ offset_bottom = 720.0
 color = Color(0.2, 0.3, 0.4, 1)
 
 [node name="Knight" parent="." instance=ExtResource("2_8v7xk")]
+z_index = 1
 position = Vector2(100, 500)
 scale = Vector2(0.003, 0.003)
 

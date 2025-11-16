@@ -77,7 +77,7 @@ A viewer donates to spawn a challenging enemy (e.g., a dragon) to try to stop th
 
 ### Functional Requirements
 
-- **FR-001**: System MUST display a 2D endless game with a knight character moving to the right.
+- **FR-001**: System MUST display a 2D endless game where the knight character appears to move to the right, but actually remains stationary while the background and obstacles scroll to the side. This creates the illusion of movement, similar to Flappy Bird.
 - **FR-002**: System MUST show score at the top of the stream and update it as the knight progresses.
 - **FR-003**: System MUST spawn enemies at intervals and allow the knight to fight them.
 - **FR-004**: System MUST allow viewers to donate to trigger in-game events (boosts, enemies).

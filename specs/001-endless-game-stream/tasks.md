@@ -73,9 +73,10 @@ description: "Task list for endless game stream MVP implementation"
 ## Phase 3: User Story 1 - Play Endless Game (Priority: P1) 🎯 MVP
 
 **Goal**: Knight character walks right, defeats enemies, accumulates score; game resets on death.
+**Goal**: Knight character appears to move right (stationary), background and obstacles scroll to create movement illusion; knight defeats enemies, accumulates score; game resets on death.
 
 **[TEST] Independent Test**: Can be fully tested by running the game and verifying:
-- Knight moves to the right continuously
+- Knight appears to move to the right (background and obstacles scroll; knight remains stationary)
 - Score increments as knight progresses (e.g., +10 per enemy defeated)
 - Enemies spawn at intervals (e.g., every 5-10 seconds)
 - Knight takes damage from enemies and can die
@@ -88,7 +89,7 @@ description: "Task list for endless game stream MVP implementation"
 - [x] T025 [P] [US1] Create Enemy class in game/scripts/enemy.gd (attributes: type, health, attack, position, AI pathfinding toward knight)
 - [x] T026 [P] [US1] Implement enemy spawner in game/scripts/enemy-spawner.gd (spawn GOBLIN/ORC at intervals, manage enemy list)
 - [x] T027 [US1] Implement combat logic in game/scripts/combat.gd (knight attack vs. enemy, damage calculation, health reduction)
-- [x] T028 [US1] Implement knight movement in game/scripts/knight.gd (constant rightward movement, collision detection, screen boundaries)
+- [x] T028 [US1] Implement knight movement illusion in game/scripts/knight.gd (knight remains stationary, background and obstacles scroll to create movement illusion, collision detection, screen boundaries)
 - [x] T029 [US1] Implement knight death and reset in game/scripts/game-manager.gd (reset game state, reset score, respawn knight, show "Game Over" screen)
 - [x] T030 [P] [US1] Create score UI in game/scenes/ui/ScoreDisplay.tscn and game/scripts/ui/score-display.gd (display score at top, update on enemy defeat)
 - [x] T031 [US1] Connect knight to game state in game/scripts/game-manager.gd (track health, score, wave number; sync with backend periodic updates)
