@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamForge - Challenge Alert</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .challenge-alert {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(45deg, #8b0000, #ff0000);
+            border-radius: 25px;
+            padding: 40px 50px;
+            border: 4px solid #ffd700;
+            box-shadow: 0 12px 40px rgba(139, 0, 0, 0.9);
+            text-align: center;
+            min-width: 500px;
+            opacity: 0;
+        }
+        
+        .challenge-alert.show {
+            animation: challengeShow 4s ease-in-out forwards;
+        }
+        
+        @keyframes challengeShow {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            35% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            90% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
+        
+        .challenge-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 1);
+        }
+        
+        .challenger-name {
+            font-size: 28px;
+            color: #fff200;
+            margin-bottom: 15px;
+        }
+        
+        .donation-amount {
+            font-size: 24px;
+            color: #00ff88;
+            margin-bottom: 20px;
+        }
+        
+        .enemy-type {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff4444;
+            margin: 15px 0;
+        }
+        
+        .dragon-type {
+            color: #ff0000;
+            animation: dragonPulse 0.8s ease-in-out infinite;
+        }
+        
+        @keyframes dragonPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="challenge-alert hidden" id="challenge-alert">
+        <div class="challenge-title">CHALLENGE INCOMING!</div>
+        <div class="challenger-name" id="challenger-name">TestChallenger</div>
+        <div class="donation-amount" id="donation-amount">$10.00</div>
+        <div>has summoned a</div>
+        <div class="enemy-type" id="enemy-type">DRAGON</div>
+        <div id="challenge-message">Prepare for battle!</div>
+    </div>
+
+    <script>
+        class ChallengeAlertOverlay {
+            constructor() {
+                this.alertElement = document.getElementById('challenge-alert');
+                this.challengerNameElement = document.getElementById('challenger-name');
+                this.donationAmountElement = document.getElementById('donation-amount');
+                this.enemyTypeElement = document.getElementById('enemy-type');
+                this.challengeMessageElement = document.getElementById('challenge-message');
+                
+                this.isAlertVisible = false;
+                this.alertQueue = [];
+                
+                this.connectToWebSocket();
+                
+                // Test key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 't') this.showTestAlert();
+                });
+            }
+            
+            connectToWebSocket() {
+                try {
+                    this.websocket = new WebSocket('ws://localhost:3001');
+                    
+                    this.websocket.onopen = () => {
+                        console.log('Challenge overlay connected');
+                        this.websocket.send(JSON.stringify({
+                            type: 'client_info',
+                            data: { type: 'challenge-overlay' }
+                        }));
+                    };
+                    
+                    this.websocket.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'donation.alert') {
+                            const data = message.payload || message.data;
+                            if (data.eventType === 'SPAWN_ENEMY' || data.eventType === 'SPAWN_DRAGON') {
+                                this.handleChallengeEvent(data);
+                            }
+                        }
+                    };
+                    
+                    this.websocket.onclose = () => {
+                        setTimeout(() => this.connectToWebSocket(), 5000);
+                    };
+                } catch (error) {
+                    setTimeout(() => this.connectToWebSocket(), 5000);
+                }
+            }
+            
+            handleChallengeEvent(data) {
+                if (this.isAlertVisible) {
+                    this.alertQueue.push(data);
+                    return;
+                }
+                this.showChallengeAlert(data);
+            }
+            
+            showChallengeAlert(data) {
+                this.challengerNameElement.textContent = data.viewerName || 'Anonymous';
+                this.donationAmountElement.textContent = `$${(data.amount || 10).toFixed(2)}`;
+                
+                if (data.eventType === 'SPAWN_DRAGON') {
+                    this.enemyTypeElement.textContent = 'DRAGON';
+                    this.enemyTypeElement.className = 'enemy-type dragon-type';
+                    this.challengeMessageElement.textContent = 'The ancient beast awakens!';
+                } else {
+                    const enemyType = data.parameters?.enemyType || 'ENEMY';
+                    this.enemyTypeElement.textContent = enemyType;
+                    this.enemyTypeElement.className = 'enemy-type';
+                    this.challengeMessageElement.textContent = `Face the ${enemyType.toLowerCase()}!`;
+                }
+                
+                this.alertElement.classList.remove('hidden');
+                this.alertElement.classList.add('show');
+                this.isAlertVisible = true;
+                
+                setTimeout(() => this.hideAlert(), 4000);
+            }
+            
+            hideAlert() {
+                this.alertElement.classList.remove('show');
+                this.isAlertVisible = false;
+                
+                setTimeout(() => {
+                    this.alertElement.classList.add('hidden');
+                    if (this.alertQueue.length > 0) {
+                        const nextAlert = this.alertQueue.shift();
+                        setTimeout(() => this.showChallengeAlert(nextAlert), 500);
+                    }
+                }, 200);
+            }
+            
+            showTestAlert() {
+                const testData = {
+                    viewerName: 'DragonLord42',
+                    amount: 25.00,
+                    eventType: 'SPAWN_DRAGON'
+                };
+                this.handleChallengeEvent(testData);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChallengeAlertOverlay();
+        });
+    </script>
+</body>
+</html>

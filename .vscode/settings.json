@@ -1,14 +1,19 @@
 {
-    "chat.promptFilesRecommendations": {
-        "speckit.constitution": true,
-        "speckit.specify": true,
-        "speckit.plan": true,
-        "speckit.tasks": true,
-        "speckit.implement": true
-    },
-    "chat.tools.terminal.autoApprove": {
-        ".specify/scripts/bash/": true,
-        ".specify/scripts/powershell/": true
-    }
+	"chat.promptFilesRecommendations": {
+		"speckit.constitution": true,
+		"speckit.specify": true,
+		"speckit.plan": true,
+		"speckit.tasks": true,
+		"speckit.implement": true
+	},
+	"chat.tools.terminal.autoApprove": {
+		".specify/scripts/bash/": true,
+		".specify/scripts/powershell/": true
+	},
+	"biome.lsp.bin": "./backend/node_modules/.bin/biome.exe",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit",
+		"source.removeUnusedImports": "always"
+	},
+	"godotTools.editorPath.godot4": "c:\\Users\\new\\Downloads\\Godot_v4.5.1\\Godot_v4.5.1-stable_win64.exe"
 }
-

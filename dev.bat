@@ -1,0 +1,3 @@
+@echo off
+echo Loading StreamForge development scripts...
+powershell -NoExit -Command "& { Import-Module '%~dp0scripts.ps1' -Force }"

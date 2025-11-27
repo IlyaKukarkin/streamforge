@@ -31,7 +31,17 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+The following gates are required to align the plan with the project constitution:
+
+- Code Quality: Project linters and static analysis MUST be configured and passing in CI for the proposed implementation surface.
+- Testing: For rapid prototypes and experiments, testing MAY be deferred. Plans that defer tests MUST document a testing backlog, identify risks, and include a remediation timeline for stabilization phases. For non-prototype features, the plan SHOULD list required tests (unit, integration, end-to-end) and identify any CI gates.
+- Performance: If the feature touches performance-critical paths, the plan MUST declare measurable targets (latency, throughput, memory) and describe the intended benchmarks or load tests.
+- UX Consistency: Any user-facing changes MUST reference the UX style/guidelines and list acceptance criteria for consistency and accessibility.
+- Observability & Versioning: The plan MUST document logging/metrics needs and any versioning or migration considerations for public APIs.
+- Development Environment: All commands and setup instructions MUST be PowerShell-compatible. JavaScript/TypeScript projects MUST use Bun as the package manager (e.g., `bun install`, `bun dev`).
+- Standardized Scripts: All development operations MUST use root-level standardized scripts (e.g., `bun run dev`, `bun run build`, `bun run lint`) and be executable from project root without directory navigation.
+
+Plans failing to satisfy these gates MUST include explicit mitigations and a reviewer-approved acceptance plan before Phase 0 completes.
 
 ## Project Structure
 

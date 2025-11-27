@@ -5,6 +5,15 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+## Constitution Alignment
+
+All specifications MUST explicitly map key requirements to the constitution principles (Code Quality, UX Consistency, Performance, Observability/Versioning, Standardized Development Scripts & Workflow). Where testing is deferred for prototypes, the spec MUST include a testing backlog and a remediation timeline; otherwise, include measurable acceptance criteria and tests for each user story, especially for P1 stories.
+
+**Development Implementation Requirements**:
+- All implementation tasks MUST use root-level standardized scripts (no directory navigation)
+- PowerShell-compatible commands only (Windows development environment)
+- Bun required for all JavaScript/TypeScript operations
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
