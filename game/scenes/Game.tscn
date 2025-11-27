@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://b6yqx8xj4x2tc"]
+[gd_scene load_steps=6 format=3 uid="uid://b6yqx8xj4x2tc"]
 
 [ext_resource type="Script" uid="uid://ls05ae3714xo" path="res://scripts/game_manager.gd" id="1_0xb8m"]
 [ext_resource type="PackedScene" uid="uid://c7yhx8m5x3pq1" path="res://scenes/Knight.tscn" id="2_8v7xk"]
+[ext_resource type="Texture2D" uid="uid://dg75as7fo0k6f" path="res://assets/background.png" id="2_78awf"]
 [ext_resource type="Script" uid="uid://dnf3iujfc7hit" path="res://scripts/enemy_spawner.gd" id="3_h9x2l"]
+[ext_resource type="Script" uid="uid://mk172ovc1xfx" path="res://scripts/background.gd" id="3_s0nni"]
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_0xb8m")
@@ -10,18 +12,15 @@ script = ExtResource("1_0xb8m")
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 360)
 
-[node name="Background" type="ColorRect" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.2, 0.3, 0.4, 1)
+[node name="Background" type="Sprite2D" parent="."]
+position = Vector2(1090, 360)
+texture = ExtResource("2_78awf")
+script = ExtResource("3_s0nni")
 
 [node name="Knight" parent="." instance=ExtResource("2_8v7xk")]
 z_index = 1
 position = Vector2(100, 500)
-scale = Vector2(0.003, 0.003)
+scale = Vector2(3, 3)
 
 [node name="EnemySpawner" type="Node2D" parent="."]
 position = Vector2(1400, 0)

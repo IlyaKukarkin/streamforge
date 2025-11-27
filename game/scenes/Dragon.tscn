@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://dad4k8n7q2p5m"]
 
 [ext_resource type="Script" uid="uid://b8xtogfk4oow6" path="res://scripts/enemy.gd" id="1_5m2x8"]
-[ext_resource type="Texture2D" path="res://assets/dragon.svg" id="2_yknt0"]
+[ext_resource type="Texture2D" uid="uid://cmykvfictpvw" path="res://assets/dragon.png" id="2_yknt0"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dragon"]
 size = Vector2(80, 80)
@@ -21,7 +21,6 @@ attack_cooldown = 1.5
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(0.6, 0.1, 0.1, 1)
-scale = Vector2(0.003, 0.003)
 texture = ExtResource("2_yknt0")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
